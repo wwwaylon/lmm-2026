@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>1-intro.knit</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Waylon Howard" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/tile-view/tile-view.css" rel="stylesheet" />
+    <script src="libs/tile-view/tile-view.js"></script>
+    <script src="libs/clipboard/clipboard.min.js"></script>
+    <link href="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.css" rel="stylesheet" />
+    <script src="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.js"></script>
+    <script>window.xaringanExtraClipboard(null, {"button":"Copy Code","success":"Copied!","error":"Press Ctrl+C to Copy"})</script>
+    <script src="libs/kePrint/kePrint.js"></script>
+    <link href="libs/lightable/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="src/xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="src/slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# <table style="width:100%; border:none; border-collapse:collapse; background:transparent; cellpadding:0; cellspacing:0;">
+<tr>
+<td style="border:none; padding:0; vertical-align:middle; text-align:left;">
+<div style="font-size:1.25em; font-weight:bold; line-height:1.1;">
+Multilevel Modeling
+</div>
+<div style="font-size:1.25em; font-weight:bold; line-height:1.1;">
+in Clinical Research
+</div>
+</td>
+<td style="border:none; padding:0; vertical-align:middle; text-align:right;">
+<img src="img/cfa_icon_emoji.png" style="width:150px; display:inline-block; margin-left:-10px;">
+</td>
+</tr>
+</table>
+]
+.subtitle[
+## <small>Concepts and Applications</small>
+]
+.author[
+### Waylon Howard
+]
+.date[
+### Webinar, March 18, 2026
+]
+
+---
+
+exclude: true
+
+
+
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+#  About me
+
+[Waylon Howard](https://wwwaylon.github.io/) (waylon.howard@seattlechildrens.org)
+
+- Principal Biostatistician and Quantitative Methodologist at: [*Biostatistics, Epidemiology and Analytics in Research (BEAR)*](https://www.seattlechildrens.org/research/resources/bear) (SCRI) 
+
+--
+  - Research methods, statistics, and measurement
+  - Grant writing, analysis planning, and manuscripts
+  - Methodological innovation and applied solutions
+
+&lt;style="clear: both;"&gt;
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+I help researchers answer the right questions!
+&lt;/span&gt;**
+]
+]
+
+---
+
+# Preliminaries
+
+Slides and material are available at
+
+.center[
+https://github.com/wwwaylon/chbd-lgm-2025
+]
+
+- The talk consists of a combination of slides and hands-on exercises
+- 💬 Feel free to ask questions anytime!
+- We will primarily rely on [`R`](https://www.r-project.org/), [`RStudio`](https://www.rstudio.com/products/rstudio/) &amp; [`GitHub`](https://github.com/). 
+
+**For my research, I typically use Mplus and R (`lmer`).**
+
+---
+  
+.center[
+## Software for Multilevel Modeling
+]
+
+.pull-left-45[
+  
+&lt;small&gt;&lt;small&gt;&lt;small&gt;
+    
+| Software | MLM Module |
+|----------|------------|
+| R | `lme4`, `nlme`, `xxM`, `DESeq2` |
+| SAS | `PROC MIXED` |
+| SPSS | `MIXED` |
+| Stata | `xtmixed` / `mixed` |
+| LISREL | `MULTILEV` |
+| HLM | Purpose-built, widely cited |
+| MLwiN | Strong for complex structures |
+| EQS | Built-in |
+| S-Plus | Built-in |
+| SYSTAT | Built-in |
+| Mplus | SEM + MLM, highly flexible |
+    
+&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
+    
+]
+
+.pull-right-45[
+  
+.center[
+&lt;small&gt;
+
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+My Recommendations
+&lt;/span&gt;**
+]
+   
+&lt;/small&gt;
+]
+  
+&lt;small&gt;
+    
+**For research:**
+  
+&lt;small&gt;&lt;small&gt;
+    
+&gt; **Mplus** for flexibility with SEM and complex models    
+
+&gt; **R (`lme4`)** for reproducibility and custom extensions
+  
+&lt;/small&gt;
+    
+No single tool is best for every situation - choose based on **model complexity**, **team expertise**, and **reproducibility needs**. Also consider factors like **collaboration**, and **cost**.
+  
+&lt;/small&gt;&lt;/small&gt;
+    
+]
+
+---
+  
+## Many names - same general idea
+
+**Model frameworks**
+
+&lt;small&gt;
+
+&gt; Multilevel models, Hierarchical linear models (HLM), Mixed-effects models, Linear mixed models (LMM), Growth curve models, Random coefficient models
+
+&lt;/small&gt;
+
+**Model components**
+
+&lt;small&gt;
+
+&gt; Variance components, Random effects / coefficients, Random intercepts and slopes, Varying coefficients, Intercepts- or slopes-as-outcomes, *Cross-level interactions*, *Contextual effects*
+
+👉 **These are all variations of mixed models.**
+
+&lt;/small&gt;
+
+---
+  
+## Plan Today
+  
+&lt;table class="table table-striped table-hover" style="font-size: 16px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Time &lt;/th&gt;
+   &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Segment &lt;/th&gt;
+   &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Key Concepts &lt;/th&gt;
+   &lt;th style="text-align:left;font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Slides &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;"&gt; 0–10 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;"&gt; Why is this important? &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; "&gt; Nested data in the real world &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 1–6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 10–25 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Estimation in Statistical Models &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; OLS vs ML estimation &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 7–15 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;"&gt; 25–40 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;"&gt; How not to handle nested data &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; "&gt; Traditional methods &amp;amp; limitations &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 16–25 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 40–55 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Empty means models &amp;amp; ICC &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Variance decomposition&lt;br&gt;Empty model &amp;amp; ICC &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 26–35 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;"&gt; 55–85 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;"&gt; Conditional models &amp;amp; Effect Size &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; "&gt; Model building &amp;amp; effect size &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 36–52 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;color: rgba(75, 79, 84, 255) !important;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 85–90 &lt;/td&gt;
+   &lt;td style="text-align:left;width: 23%; font-weight: bold;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Next Steps &amp;amp; Extensions &lt;/td&gt;
+   &lt;td style="text-align:left;width: 47%; color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; Extensions &amp;amp; resources &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(0, 169, 224, 255) !important;"&gt; 53–55 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
+
+## Why multilevel models? 
+  
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/mlm.png style="width:300px; display:block; margin:-60px auto -30px auto;"&gt;
+]
+
+&lt;small&gt;&lt;small&gt;
+  
+- Data are clustered ➡️ observations are related  
+
+- Standard analyses assume **independence**
+  
+  **Example: hospital re-admissions**
+  
+&gt; *Patients in the same hospital share unmeasured factors.*  
+&gt; *Repeated measurements on the same patient are not independent.*
+  
+&lt;/small&gt;&lt;/small&gt;
+  
+&lt;style="clear: both;"&gt;
+  
+.center[
+&lt;small&gt;&lt;small&gt;
+      
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+Violations of this assumption bias standard errors. 
+&lt;/span&gt;**
+]
+&lt;/small&gt;&lt;/small&gt;
+  ]
+
+---
+  
+## Kinds of Data Structure
+  
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/l1l2.png style="width:600px; display:block; margin:-40px auto -40px auto;"&gt;
+]   
+
+.left[
+  
+&lt;small&gt;&lt;small&gt;
+    
+&lt;br&gt;
+    
+- **Hierarchical (Nested)** repeated tests - students - schools - districts
+  
+- **Crossed (Non-nested)** observations within participants *and* tasks  
+  
+- **Balanced vs. Unbalanced** Experiments vs. Real-world    
+
+- **Other Structures** Temporal (time-ordered), Spatial (location-based) 
+  
+]
+
+Once you learn about hierarchical data, you start seeing examples everywhere!
+
+&lt;small&gt;&lt;small&gt;
+
+*Image adapted from Preacher (2010) lecture - thanks Kris.*
+
+&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**How do statistical models estimate parameters?**
+
+&lt;small&gt;&lt;small&gt;
+
+| Model | Outcome | Effects | Sampling |
+|------|---------------------|--------|----------------|
+| **Linear Model** | **Normal** | **Fixed** | **1 level** |
+| &lt;span style="color:#A7A9AC;"&gt;Generalized Linear Model&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;Any&lt;/span&gt;  | &lt;span style="color:#A7A9AC;"&gt;Fixed&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;1 level&lt;/span&gt; |
+| &lt;span style="color:#A7A9AC;"&gt;Linear *Mixed* Model&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;Normal&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;Fixed + Random&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;2+ levels&lt;/span&gt; |
+| &lt;span style="color:#A7A9AC;"&gt;Generalized Linear *Mixed* Model&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;Any&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;Fixed + Random&lt;/span&gt; | &lt;span style="color:#A7A9AC;"&gt;2+ levels&lt;/span&gt; |
+
+&lt;/small&gt;
+
+**🔑 Key question:**
+
+&gt; How do we estimate the parameters of these models?
+
+We start with Ordinary Least Squares (OLS)
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**Ordinary Least Squares (OLS)**
+
+$$
+\color{gray}{\text{Linear regression: }} \text{y}_i = \beta_0 + \beta_1 \text{x}_i + \text{e}_i
+$$
+
+$$
+\color{gray}{\text{Residual: }} \text{e}_i = \text{y}_i - \hat{\text{y}}_i
+$$
+
+$$
+\small \color{gray}{\text{OLS chooses coefficients that minimize: }} \sum_{i=1}^{n}(\text{y}_i - \hat{\text{y}}_i)^2
+$$
+
+**💡 Core idea**
+
+&gt; Find the line that minimizes the total squared prediction error.
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ols1_plot.png style="width:400px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+This scatterplot shows the relationship between a predictor **X** and an outcome **Y**. Each orange point represents an observed score.
+
+**OLS will search for the line that best predicts these values.**
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ols2_plot.png style="width:400px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+**Features of the best-fitting line:** &lt;small&gt; Intercept `\(\beta_0\)`, Slope `\(\beta_1\)`, Residual variance &lt;/small&gt;
+
+These parameters define the model that best predicts the data.
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+.center[
+
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ols3_plot.png style="width:400px; display:block; margin:-40px auto -20px auto;"&gt;
+
+]  
+
+&lt;small&gt;
+
+A **residual** is the vertical distance to the regression line: `\(\text{e}_i = \text{y}_i - \hat{\text{y}}_i\)`
+
+But OLS does **not minimize the raw residuals**.
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**Why Square Residuals?**
+
+&lt;small&gt;&lt;small&gt;
+
+| Strategy | Problem |
+|----------|---------|
+| Minimize **sum** of residuals | Positive &amp; negative cancel |
+| Minimize **sum of absolute** residuals | Difficult to solve |
+| Minimize **sum of squared** residuals | Works 🏆 ✨ | 
+
+&lt;/small&gt;&lt;/small&gt;
+
+&lt;small&gt;
+
+Key benefits:
+
+✅ makes all values positive
+
+✅ penalizes large errors
+
+✅ produces a **closed-form solution**
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ols4_plot.png style="width:400px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+`\(\color{grey}{\text{OLS chooses the line that minimizes: }}\sum_{i=1}^{n}(\text{y}_i - \hat{\text{y}}_i)^2\)`
+
+---
+
+
+
+.center[
+
+&lt;img src="img/ols_squares_zoomed.gif" style="display: block; margin: auto;" /&gt;
+
+]  
+
+&lt;small&gt;
+
+Geometrically:
+
+&gt; OLS minimizes the **total area of the residual squares**.
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+
+
+.center[
+
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ols_boxes_plot.png style="width:300px; display:block; margin:-40px auto -20px auto;"&gt;
+
+]  
+
+&lt;small&gt;
+
+The squared-error function forms a **smooth quadratic surface.**
+
+This means: ✅ there is **one optimal solution** ✅ we can solve it analytically
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+OLS therefore has a closed-form estimator.
+&lt;/span&gt;**
+]
+]
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**But What Is OLS Really Doing?**
+
+&lt;small&gt;
+
+&gt; When errors are normally distributed, the OLS estimates of the regression coefficients are identical to the maximum likelihood estimates - minimizing squared residuals and maximizing the normal likelihood are the same problem.
+
+To see why, we need to introduce **Maximum Likelihood (ML)**.
+
+&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+&lt;style="clear: both;"&gt;
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+Maximum Likelihood
+&lt;/span&gt;**
+]
+]
+
+A **probability density function 😏** describes the distribution of the data.
+
+$$ 
+\color{grey}{\text{For a normal distribution: }}
+\large
+\text{L}_i = {\frac{1}{\sqrt{2 \pi \sigma^2}} \text{e}^{-.5\frac{(\color{#EB7B35}{\text{Y}_i - \mu})^2 }{\color{#EB7B35}{\sigma}^2} }} 
+$$
+
+`\(\text{L}_i\)` measures the relative probability of observing `\(\text{Y}_i\)` given a mean and variance.
+
+---
+
+.pull-right-60[
+
+
+
+&lt;table class="table table-striped table-hover table-condensed" style="font-size: 13.5px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; ID &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; x &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; &lt;div style="text-align: center;"&gt;L&lt;sub&gt;&lt;i&gt;i&lt;/i&gt;&lt;/sub&gt;
+&lt;/div&gt; &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 36.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.010201 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 41.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.027624 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 42.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.030908 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.032971 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.034205 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.037444 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.040166 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 46.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.045074 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 48.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.050658 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 10 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 49.0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.051223 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; 50.0 &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; &lt;b style="font-size:16px;"&gt;0.052038&lt;/b&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 12 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 51.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.051508 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 13 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.044915 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 14 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.044264 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 15 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 55.7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.041102 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 16 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.035227 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 17 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.033589 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.022677 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 19 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.020433 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 20 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 65.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.007888 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+]
+
+.pull-left-40[
+
+**ML estimation**
+
+.small[
+
+Applying the density function gives the relative probability `\(\text{(}L_i\text{)}\)` of each score from this normal distribution. 
+
+**Complete data:** 
+
+$$
+\text{x } (\mu = 50.42 \text{, } \sigma = 7.65)
+$$
+]
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+Largest `\(L_i\)` is best!
+&lt;/span&gt;**
+]
+]
+
+]
+
+---
+
+&lt;img src="1-intro_files/figure-html/unnamed-chunk-6-1.png" width="600px" height="600px" style="display: block; margin: auto;" /&gt;
+
+---
+
+.pull-right-40[
+
+
+
+&lt;table class="table table-striped table-hover table-condensed" style="font-size: 13.5px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; ID &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; x &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; &lt;div style="text-align: center;"&gt;L&lt;sub&gt;&lt;i&gt;i&lt;/i&gt;&lt;/sub&gt;
+&lt;/div&gt; &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; &lt;div style="text-align: center;"&gt;logL&lt;sub&gt;&lt;i&gt;i&lt;/i&gt;&lt;/sub&gt;
+&lt;/div&gt; &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 36.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.010201 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.585258 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 41.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.027624 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.589055 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 42.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.030908 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.476754 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.032971 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.412113 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.034205 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.375376 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.037444 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.284921 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.040166 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.214733 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 46.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.045074 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.099445 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 48.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.050658 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.982664 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 10 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 49.0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.051223 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.97157 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; 50.0 &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; 0.052038 &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; &lt;b style="font-size:16px;"&gt;-2.955783&lt;/b&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 12 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 51.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.051508 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.966023 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 13 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.044915 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.102986 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 14 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.044264 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.117579 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 15 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 55.7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.041102 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.191692 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 16 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.035227 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.345936 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 17 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.033589 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.393553 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.022677 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.786393 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 19 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.020433 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.890587 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 20 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 65.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 0.007888 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.842415 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+]
+
+.pull-left-40[
+
+**Maximum Likelihood**
+
+.small[
+Multiple each `\((L_i)\)` to get sample likelihood.
+
+&lt;small&gt;&lt;small&gt;&lt;small&gt;0.00000000000000000000000000000163666415977258&lt;/small&gt;&lt;/small&gt;&lt;/small&gt; 
+&lt;small&gt;&lt;small&gt;Fit of this data to `\(\mu\)` = 50.42, `\(\sigma\)` = 7.65&lt;/small&gt;&lt;/small&gt; 
+
+&lt;small&gt;**To avoid small numbers, we take the log of the likelihood.**&lt;/small&gt;  
+
+Add each `\(logL_i\)` to get sample loglikelihood.
+
+-68.58
+
+**Model Fit Indices use this!**
+
+`\(\small \text{AIC} = -2 \times logL+2k\)`
+`\(\small \text{ BIC} = -2 \times logL+k \times logN\)`
+
+]
+
+]
+
+---
+
+.pull-left-60[
+
+
+
+&lt;table class="table table-striped table-hover table-condensed" style="font-size: 11px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; ID &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; x &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; μ = 30 &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; μ = 40 &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; μ = 50 &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; μ = 60 &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; μ = 70 &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 36.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.326 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.053 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -4.487 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -7.627 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -12.474 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 41.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.142 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.982 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.528 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.781 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -9.74 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 42.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.309 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.012 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.422 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.538 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -9.361 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.419 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.036 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.361 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.391 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -9.129 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 43.4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.487 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.053 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.326 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.306 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.992 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.675 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.105 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.241 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.085 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.634 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 44.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.849 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.159 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.176 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.33 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 46.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.222 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.293 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.071 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.556 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -7.747 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 48.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.906 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.585 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -2.971 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.063 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.862 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 10 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 49 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.035 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.645 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -2.963 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.987 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.718 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 50 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.368 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.808 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -2.954 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.808 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.368 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 12 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 51.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.936 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.103 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -2.976 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.556 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.843 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 13 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.118 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.773 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.135 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.203 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.978 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 14 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 54.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.203 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.823 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.151 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.185 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.926 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 15 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 55.7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.591 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.058 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.231 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.112 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.699 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 16 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -9.268 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.479 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.397 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.021 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.352 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 17 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 57.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -9.455 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -5.598 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.447 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.003 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -4.266 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 18 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -10.789 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.471 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.86 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.955 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.757 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 19 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 60.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -11.102 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -6.682 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -3.968 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -2.961 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.661 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 20 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 65.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -13.588 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -8.416 &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt; -4.952 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.194 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; -3.143 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;color: black !important;background-color: transparent !important;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt;  &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;-139.79&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;-87.13&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;color: white !important;background-color: rgba(141, 198, 63, 255) !important;"&gt; &lt;b style="font-size:12px;"&gt;-68.62&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;-84.23&lt;/b&gt; &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;b style="font-size:12px;"&gt;-133.98&lt;/b&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+]
+
+.pull-right-40[
+
+&lt;small&gt;
+
+**ML estimation as an audition process**
+
+&lt;small&gt;&lt;small&gt;
+
+&gt; We calculate the log-likelihood for every observation under each candidate μ, then sum them up. The total at the bottom of each column is that candidate's total log-likelihood score - **its audition result**.
+
+- Here, the highest log-likelihood (least negative) wins!
+
+&lt;/small&gt;&lt;/small&gt;
+
+&lt;/small&gt;
+
+]
+
+---
+
+
+
+.center[
+
+&lt;img src="img/ols_ml_derivative.gif" style="display: block; margin: auto;" /&gt;
+
+]  
+
+&lt;small&gt;&lt;small&gt;
+
+&gt; SSR is embedded inside the log-likelihood given errors are normal and independent with constant variance, so both methods locate the same optimal `\(\beta\)`.
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**Why Move Beyond OLS?**
+  
+OLS works only for:
+
+- Normal outcomes
+
+- One outcome at a time
+
+- Independent observations
+
+- Listwise deletion with missing data
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**Maximum likelihood allows us to estimate:**
+
+✅ multilevel models
+
+✅ generalized models (binary, count, etc.)
+
+✅ models with missing data (FIML)
+
+✅ multiple outcomes simultaneously
+
+&gt; ML is the general estimation framework for modern statistical models. We will use it!
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**ML in Multilevel Models**
+
+Multilevel models estimate:
+
+- Fixed effects
+
+- Random effects
+
+- Variance components
+
+These parameters are estimated using **ML** or **REML**.
+
+---
+
+## 🎯 Estimation in Statistical Models
+
+**ML vs. Restricted/Residual ML (REML)**
+
+&lt;small&gt;&lt;small&gt;
+  
+| Method | Use Case | Pros / Notes |
+|--------|----------|--------------|
+| **ML** | Comparing models with **different fixed effects** | Random effects estimates may be slightly biased downward |
+| **REML** | Comparing models with the **same fixed effects**, or interpreting random effects | Provides unbiased estimates of random effects var/covar&lt;br&gt;&lt;br&gt; Cannot compare models with different fixed effects |
+
+✅ Changing fixed effects? - Use ML to compare
+
+✅ Changing random effects only? - Use REML to compare
+
+✅ Final model for reporting? - Refit with REML for unbiased variance estimates.
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## How to handle nested data?
+
+---
+
+## How to handle nested data?
+
+Methods fall into three general categories based on how they handle nestedness.
+
+--
+
+- ⚠️ **Ignore:** disaggregation, aggregation   
+
+- 😕 **Control:** ANCOVA, separate regressions, adjusting the results, fixed effects approach 
+
+- 🔍 **Model:** *Modeling* nestedness     
+
+--
+
+&gt; In fact, methods have shifted from *controlling clustering* (attempting to remove its influence) to **modeling it as something worth studying**! 🙌
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+&gt; Disaggregation means .highlight[**&lt;span style="color:#FFFFFF;"&gt;moving variables to a lower level&lt;/span&gt;**] as if there is no clustering &lt;small&gt;(see [Hox, J., Moerbeek, M., &amp; Van de Schoot, R., 2017](https://biostats.bepress.com/cgi/viewcontent.cgi?article=1001&amp;context=bioconductor)).&lt;/small&gt;
+
+- **The risk:** Inflated sample size and underestimated standard errors (false positives).
+
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/disaggregation_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+- Level-1 units are the unit of analysis.
+- Level-1 and level-2 predictors are included as if they were ordinary independent variables.
+
+&lt;/small&gt;
+
+--- 
+
+## 😳 Not recommended
+
+&lt;small&gt;
+
+&gt; .highlight[**&lt;span style="color:#FFFFFF;"&gt;Violates the independence assumption&lt;/span&gt;**] which can lead to standard errors that are severely biased (usually underestimated).   
+
+- **Result:** Inflated Type I error rates and overconfident conclusions.
+
+&gt; .highlight[**&lt;span style="color:#FFFFFF;"&gt;Neglects between-cluster variation&lt;/span&gt;**], effectively treating all clusters as identical and failing to model the unique intercepts or slopes associated with each group.
+
+- **Result:** Lost insights into group-level effects and potentially misleading fixed effects estimates.
+
+&lt;/small&gt;
+
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+.center[
+
+.pull-left-40[
+
+&lt;table class="table" style="font-size: 14px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; group &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; x &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; y &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -9.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.7 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 20.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9.7 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 36.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.9 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.4 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 24.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 21.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 47.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 45.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 34.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.6 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 45.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 84.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 26.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 80.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 61.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 77.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.5 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+]
+
+.pull-right-60[
+
+.left[
+
+&lt;small&gt;
+
+**Example (Nested/Grouped Data)**
+
+- **x** = predictor, **y** = outcome
+
+- **5 groups**, showing first 3 rows 
+
+- 80 individuals per group (*N* = 400)
+
+- **Think:** students in classrooms, patients in hospitals, repeated measures per person
+
+`$$\text{y}_i = \beta_0 + \beta_1 \text{x}_i + \text{e}_i$$`
+
+&lt;/small&gt;
+
+] ]
+
+]
+
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+&lt;small&gt;&lt;small&gt;
+
+**R code:**
+
+&lt;pre style="font-size:0.8em;"&gt;
+pooled_lm &lt;- lm(y ~ x, data = df)
+summary(pooled_lm)
+&lt;/pre&gt;
+
+
+Table: Pooled OLS Regression with Centered Predictor
+
+|term        | estimate| std.error| statistic| p.value|
+|:-----------|--------:|---------:|---------:|-------:|
+|(Intercept) |    6.392|     0.181|     35.38|   0.000|
+|x_c         |    0.001|     0.006|      0.09|   0.928|
+
+&gt; In a linear regression predicting Y from X (mean-centered), the intercept was **6.392**, representing the expected *Y* at the mean of *X*. The slope for *X* was **0.001**, which was not statistically significant, *t*(398) = 0.09, *p* = 0.928. .highlight[**&lt;span style="color:#FFFFFF;"&gt;This analysis assumes that groups have no influence; the more group membership actually affects Y, the more misleading this result becomes&lt;/span&gt;**].
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/grouped_residual_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+**Knowing the group matters!**
+
+- ⚠️ `\(\text{e}_i\)` = individual + group variation
+ 
+
+&lt;/small&gt;
+
+---
+
+## 🙈 🙉 🙊 What is disaggregation?
+
+.center[
+
+.pull-left-40[
+
+&lt;table class="table" style="font-size: 14px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; group &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; x &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; y &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; resid &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -9.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;0.4&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 20.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 9.7 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;3.3&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 36.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.9 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;2.5&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 13.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.4 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;0&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 24.8 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;1.9&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 21.7 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-1.4&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 47.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-2.1&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 45.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 6.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(141, 198, 63, 255) !important;"&gt;0.2&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 34.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.6 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-1.7&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 45.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-4.3&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 84.1 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-1.1&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 26.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-5.4&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 80.9 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.1 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-6.3&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 61.5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.8 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-5.6&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 77.4 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5.5 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; &lt;span style="     color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: rgba(235, 123, 53, 255) !important;"&gt;-0.9&lt;/span&gt; &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+]
+
+.pull-left-60[
+
+.left[
+
+&lt;small&gt;
+
+**Where the bias shows up:**
+
+&lt;small&gt;
+
+The model **&lt;span style="color:#8DC63F;"&gt;overpredicts&lt;/span&gt;** some groups and **&lt;span style="color:#EB7B35;"&gt;underpredicts&lt;/span&gt;** others.
+
+&gt; Residual variance is inflated but the **SE of the slope is too low** because OLS treats all 400 points as independent. Accounting for strong within-group correlation shrinks the effective sample size from 400 to 12! 😲 
+
+$$
+\small
+\text{SE}(\hat{\beta}) = \sqrt{\frac{\sigma^2 \times \color{#A7A9AC}{\text{VIF}}}{\sum_{i=1}^{n} (x_i - \bar{x})^2}} \text{, where} \color{#A7A9AC}{\text{VIF}} = 1 + (n_j - 1)\rho 
+$$
+Our estimated SE was **0.006**, but adjusting for groups it should be **0.03**. 
+
+&lt;/small&gt;&lt;/small&gt;
+
+] ]
+
+]
+
+---
+
+## 🔗 What is aggregation?
+
+---
+
+## 🔗 What is aggregation?
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/aggregation_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+- Level-2 units are the unit of analysis.
+- **Massive loss of information!** 😲    
+- The results cannot be generalized to level-1 (*ecological fallacy*).
+
+&lt;/small&gt;
+
+---
+
+## 🔗 What is aggregation?
+
+&lt;small&gt;&lt;small&gt;
+
+**R code:**
+
+&lt;pre style="font-size:0.8em;"&gt;
+agg_lm &lt;- lm(y_mean ~ x_mean, data = group_means)
+&lt;/pre&gt;
+
+
+Table: Aggregated Regression (Group Means)
+
+|term        | estimate| std.error| statistic| p.value|
+|:-----------|--------:|---------:|---------:|-------:|
+|(Intercept) |    6.392|     0.333|     19.20|   0.000|
+|x_mean      |   -0.100|     0.015|     -6.43|   0.008|
+
+&gt; In a linear regression predicting **group-mean Y** from the **group-mean X** (both grand mean-centered). The slope for *X* was **-0.1**, which was statistically significant, *t*(3) = -6.43, *p* = 0.008, with a large effect size of `\(\text{R}^2\)` = 0.93. .highlight[**&lt;span style="color:#FFFFFF;"&gt;This analysis is at the group level, and cannot be assumed to apply to individuals within those groups&lt;/span&gt;**].
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🛠 The fixed effects approach?
+
+---
+
+## 🛠 The fixed effects approach?
+
+**Include group as a fixed effect via dummy coding.**
+
+&lt;small&gt;
+
+- Separate intercept for each group
+
+- Slopes equal (unless interactions added)
+
+- Many parameters (50 groups = 49 dummy codes) 😟
+
+&lt;small&gt;
+
+&gt; **Imagine 5 specific hospitals** (Seattle Children's, CHOP, and so on) and we chose these hospitals deliberately because we want to study *these* hospitals specifically. Our estimates tell us how much each hospital's intercept differs from **the reference hospital**, and .highlight[**&lt;span style="color:#FFFFFF;"&gt;we never intend to say anything beyond these 5 hospitals anyway&lt;/span&gt;**]. Because slopes are fixed (parallel lines), the effect of *X* represents the common within-hospital relationship across all hospitals.
+
+&lt;/small&gt;&lt;/small&gt; 
+
+---
+
+## 🛠 The fixed effects approach?
+
+&lt;small&gt;&lt;small&gt;
+
+**R code:**
+
+&lt;pre style="font-size:0.8em;"&gt;
+fixed_lm &lt;- lm(y ~ x + factor(group), data = df)
+&lt;/pre&gt;
+
+
+Table: Fixed-effects Regression (dummy codes)
+
+|term           | estimate| std.error| statistic| p.value|
+|:--------------|--------:|---------:|---------:|-------:|
+|(Intercept)    |      8.1|     0.211|      38.4|       0|
+|x              |      0.1|     0.004|      23.6|       0|
+|factor(group)2 |     -2.9|     0.307|      -9.4|       0|
+|factor(group)3 |     -6.4|     0.327|     -19.5|       0|
+|factor(group)4 |     -9.4|     0.363|     -25.8|       0|
+|factor(group)5 |    -12.2|     0.395|     -30.9|       0|
+
+This approach absorbs between-group variation and focuses on within-group associations, producing more realistic SEs than naive pooled OLS.
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🛠 The fixed effects approach?
+
+**1️⃣ No bias from omitted group effects**
+
+&lt;small&gt;
+
+- The over/under-prediction problem from pooled OLS goes away because each group gets its own intercept.
+
+&lt;/small&gt;
+
+**2️⃣ No design-effect inflation from clustering**
+
+&lt;small&gt;
+
+- The ICC is controlled by the group terms 
+
+&lt;/small&gt;
+
+**3️⃣ Effective sample size is 396 after adjustment.** 
+
+&lt;small&gt;
+
+.center[
+
+*Assumes fixed slopes unless you add interactions.* 
+
+]
+
+&lt;/small&gt;
+
+---
+
+## 📊 ANCOVA approach?
+
+---
+
+## 📊 ANCOVA approach?
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/ancova_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+**Same model - different interpretation and motivation.**
+
+&lt;small&gt;
+
+- Cannot model varying slopes across groups  
+- Cannot include level-2 predictors of group effects  
+- Group differences are controlled, not modeled
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🧩 Post-adjustment?
+
+---
+
+## 🧩 Post-adjustment?
+
+**If nesting biases standard errors, adjust them directly.**
+
+&lt;small&gt;&lt;small&gt;
+
+**R code:**
+
+&lt;pre style="font-size:0.8em;"&gt;
+pooled_lm &lt;- lm(y ~ x_c, data = df)
+cluster_se &lt;- sandwich::vcovCL(pooled_lm, cluster = df$group, type = "HC1")
+&lt;/pre&gt;
+
+
+Table: Fixed-effects Regression with Cluster-Robust SEs
+
+|term        | estimate| std.error| t_value| p_value|
+|:-----------|--------:|---------:|-------:|-------:|
+|(Intercept) |    6.392|     1.115|    5.73|   0.000|
+|x_c         |    0.001|     0.024|    0.02|   0.982|
+
+- The new SE = **0.02** up from **0.006**
+
+- Does **not model cluster-specific effects** 
+
+- Generally **not recommended** for multilevel data
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🔀 Separate regressions? 
+
+---
+
+## 🔀 Separate regressions?
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/seperate_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+] 
+
+**Analyze each level-2 unit separately.**
+
+- 5 groups = 5 models
+
+---
+
+.center[
+## 🔀 Seperate regressions?
+
+&lt;small&gt;
+
+**5 separate regressions ➡️ get the variance across groups** 
+
+]
+
+&lt;small&gt;
+
+
+
+.pull-left-45[
+
+
+Table: Separate Regressions per Group: Intercepts and Slopes
+
+|group | intercept| slope|
+|:-----|---------:|-----:|
+|1     |      7.98|  0.11|
+|2     |      5.76|  0.09|
+|3     |      1.27|  0.11|
+|4     |     -1.70|  0.11|
+|5     |     -3.27|  0.09|
+
+]
+
+.pull-right-45[
+
+
+Table: Variance and Covariance Across Groups (equal weight)
+
+|  I_Var|   S_Var| IS_Cov|
+|------:|-------:|------:|
+| 22.995| 0.00017|  0.007|
+
+]
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## 🔀 Separate regressions?
+
+- Examine variance of intercepts &amp; slopes
+
+- All clusters are weighted equally  
+
+- Does **not partition variance** 
+
+- Involves estimating a **large number of parameters!** 
+
+&gt; 50 hospitals = 50 separate regressions = 500 parameters - this requires a ton of data! 😔 
+
+---
+
+## 🤨 Which Effect Is Correct?
+
+
+
+.center[
+
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/paradox_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+
+]  
+
+&lt;small&gt;
+
+**What happens with the same data can be confusing.** 
+
+&gt; Ignoring clustering changes the estimated relationship.
+
+&lt;style="clear: both;"&gt;
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+We need a model that separates within- and between-group effects.
+&lt;/span&gt;**
+]
+]
+
+&lt;/small&gt;
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;  The Solution: Multilevel Models
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;  The Solution: Multilevel Models
+
+
+
+.center[
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/mlm_plot.png style="width:600px; display:block; margin:-40px auto -20px auto;"&gt;
+]  
+
+&lt;small&gt;
+
+.center[
+**Multilevel models do something different:**  
+they *simultaneously* model variation **within** and **between** clusters.
+]
+
+&lt;/small&gt;
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;  The Solution: Multilevel Models
+
+&lt;small&gt;
+
+**Model the structure - don't ignore it, don't destroy it.**
+
+*All the approaches so far fall short in some way:*
+
+- **Disaggregation:** &lt;small&gt;Easy but biased; treats all observations as exchangeable&lt;/small&gt;  
+
+- **Aggregation:** &lt;small&gt;Only higher level data; different questions&lt;/small&gt;
+
+- **Dummy codes:** &lt;small&gt;Assumes *one* shared story across clusters, unwieldy&lt;/small&gt;
+
+- **Post-adjustment:** &lt;small&gt;Corrects bias but ignores cluster variation&lt;/small&gt;   
+
+- **Separate regressions:** &lt;small&gt;Parameter-hungry and can't generalize&lt;/small&gt;  
+
+&lt;/small&gt;
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;  The Solution: Multilevel Models
+
+&lt;small&gt;
+
+**Model dependency across observations** 
+
+&lt;small&gt;
+
+  - Longitudinal, clustered, or cross-classified data? ✅ No problem!  
+
+  - Tailor your model to the **sources of correlation** in your data
+
+&lt;/small&gt;
+
+**Include categorical or continuous predictors at any level**  
+
+&lt;small&gt;
+
+  - Time-varying, person-level, or group-level predictors   
+
+  - Explore **why** observations are correlated, don’t just control for it
+
+&lt;/small&gt;
+
+**Handle unbalanced or missing data**  
+
+&lt;small&gt;
+
+  - Not every person needs the same number of measurements  
+
+  - Missing data? ✅ No problem!
+
+&lt;/small&gt;
+
+&lt;/small&gt;
+
+---
+
+class: center, middle, inverse
+
+## Questions? 🤔
+
+.font120[
+📧 waylon.howard@seattlechildrens.org      
+]
+
+Next: *Diving into Multilevel Models (MLM)*
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"slideNumberFormat": "<div class=\"progress-bar-container\">\n  <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">\n  </div>\n</div>"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

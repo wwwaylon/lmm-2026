@@ -1,0 +1,1056 @@
+---
+title: >
+  <table style="width:100%; border:none; border-collapse:collapse; background:transparent; cellpadding:0; cellspacing:0;">
+  <tr>
+    <td style="border:none; padding:0; vertical-align:middle; text-align:left;">
+      <div style="font-size:1.25em; font-weight:bold; line-height:1.1;">Multilevel Modeling</div>
+      <div style="font-size:1.25em; font-weight:bold; line-height:1.1;">in Clinical Research</div>
+    </td>
+    <td style="border:none; padding:0; vertical-align:middle; text-align:right;">
+      <img src="`r here::here('slides','img','cfa_icon_emoji.png')`" style="width:150px; display:inline-block; margin-left:-10px;">
+    </td>
+  </tr> </table>
+subtitle: "<small>Fitting and Interpreting</small>"
+author: "`r paste(params$author, collapse = ' & ')`"
+date: "`r paste0(params$location, ', ', params$date)`"
+params:
+  author: ["Author Name"]
+  date: "Placeholder Date"
+  location: "Placeholder Location"
+---
+exclude: true
+
+```{r child = "_setup.Rmd"}
+```
+
+```{r title_emoji, echo=FALSE, eval=FALSE}
+
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(here)
+
+# Create the graph with smaller arrows and transparent background
+graph <- grViz("
+digraph cfa_icon_emoji {
+
+  graph [
+    layout=dot,
+    rankdir=TB,
+    bgcolor=transparent,
+    ranksep=0.25,
+    nodesep=0.15
+  ];
+
+  // Nodes with thick black borders
+  node [
+    shape=circle,
+    width=0.60,
+    height=0.60,
+    fixedsize=true,
+    label='',
+    style=filled,
+    color='black',     // border color
+    penwidth=2.5         // border thickness
+  ];
+
+  school [fillcolor='#FF8A80'];
+  classroom1 [fillcolor='#FFB199'];
+  classroom2 [fillcolor='#FFB199'];
+
+  student1 [fillcolor='#FFD8C2'];
+  student2 [fillcolor='#FFD8C2'];
+  student3 [fillcolor='#FFD8C2'];
+  student4 [fillcolor='#FFD8C2'];
+
+  // Black arrows
+  edge [
+    arrowsize=0.6,
+    penwidth=2,
+    color='black',
+    headclip=true,
+    tailclip=true
+  ];
+
+  school -> classroom1;
+  school -> classroom2;
+  classroom1 -> student1;
+  classroom1 -> student2;
+  classroom2 -> student3;
+  classroom2 -> student4;
+
+  { rank=same; classroom1; classroom2; }
+}
+")
+
+
+# Export to SVG
+svg_graph <- export_svg(graph)
+
+# Save PNG, transparent by default
+rsvg_png(
+  charToRaw(svg_graph),
+  file = here::here("slides", "img", "cfa_icon_emoji.png"),
+  width = 1200,
+  height = 1200
+)
+
+```
+
+```{r models, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.retina = 3
+)
+
+library(lme4)
+library(lmerTest)
+library(ggplot2)
+library(performance)
+library(knitr)
+library(kableExtra)
+
+# ── Reproducible data ──────────────────────────────────────────────────────────
+set.seed(42)
+n_clinics   <- 25
+clinic_sizes <- sample(11:32, n_clinics, replace = TRUE)
+
+clinic_data <- data.frame(
+  clinic_id      = 1:n_clinics,
+  clinic_size    = sample(80:220, n_clinics, replace = TRUE),
+  protocol_type  = rbinom(n_clinics, 1, 0.5)
+)
+clinic_data$size50 <- (clinic_data$clinic_size - 150) / 50
+clinic_data$u0c    <- rnorm(n_clinics, 0, 3.69)
+
+patient_data <- do.call(rbind, lapply(1:n_clinics, function(c) {
+  n <- clinic_sizes[c]
+  data.frame(
+    clinic_id      = c,
+    patient_id     = seq_len(n),
+    clinic_size    = clinic_data$clinic_size[c],
+    size50         = clinic_data$size50[c],
+    protocol_type  = clinic_data$protocol_type[c],
+    pain_score     = 49.2 + clinic_data$u0c[c] + rnorm(n, 0, 6.28)
+  )
+}))
+
+# === Models ======================================================================
+Model0 <- lm(pain_score ~ 1, data = patient_data)
+Model1 <- lmer(pain_score ~ 1 + (1 | clinic_id), data = patient_data, REML = TRUE)
+Model2 <- lmer(pain_score ~ 1 + size50 + protocol_type + (1 | clinic_id),
+               data = patient_data, REML = TRUE)
+Model3 <- lmer(pain_score ~ 1 + size50 * protocol_type + (1 | clinic_id),
+               data = patient_data, REML = TRUE)
+
+# === Variance components =========================================================
+vc1      <- as.data.frame(VarCorr(Model1))
+tau_u0   <- vc1$vcov[1]
+sigma_e  <- vc1$vcov[2]
+icc_manual       <- tau_u0 / (tau_u0 + sigma_e)
+avg_cluster_size <- mean(table(patient_data$clinic_id))
+design_effect    <- 1 + (avg_cluster_size - 1) * icc_manual
+effective_n      <- nrow(patient_data) / design_effect
+icc2_value       <- tau_u0 / (tau_u0 + sigma_e / avg_cluster_size)
+
+fixed_int <- fixef(Model1)[1]
+ri_sd     <- sqrt(tau_u0)
+ri_lower  <- fixed_int - 1.96 * ri_sd
+ri_upper  <- fixed_int + 1.96 * ri_sd
+
+coef_table2 <- summary(Model2, ddf = "Satterthwaite")$coefficients
+coef_table3 <- summary(Model3, ddf = "Satterthwaite")$coefficients
+
+Model1_ML <- lmer(pain_score ~ 1 + (1 | clinic_id),
+                  data = patient_data, REML = FALSE)
+Model2_ML <- lmer(pain_score ~ 1 + size50 + protocol_type + (1 | clinic_id),
+                  data = patient_data, REML = FALSE)
+Model3_ML <- lmer(pain_score ~ 1 + size50 * protocol_type + (1 | clinic_id),
+                  data = patient_data, REML = FALSE)
+
+lrt_stat     <- -2 * (logLik(Model0) - logLik(Model1))
+lrt_compare  <- anova(Model1_ML, Model2_ML)
+lrt_compare23 <- anova(Model2_ML, Model3_ML)
+
+vc2       <- as.data.frame(VarCorr(Model2_ML))
+cond_icc  <- vc2$vcov[1] / sum(vc2$vcov)
+
+# ── PseudoR2 helper ────────────────────────────────────────────────────────────
+PseudoR2 <- function(baseModel, model1, model2 = NULL) {
+  vcb  <- as.data.frame(VarCorr(baseModel))
+  vc1_ <- as.data.frame(VarCorr(model1))
+  r2L2_1 <- (vcb$vcov[1] - vc1_$vcov[1]) / vcb$vcov[1]
+  r2L1_1 <- (vcb$vcov[2] - vc1_$vcov[2]) / vcb$vcov[2]
+  res <- data.frame(
+    Component       = c("Between-Clinic (L2)", "Within-Clinic (L1)"),
+    Base_Var        = round(c(vcb$vcov[1],  vcb$vcov[2]),  3),
+    Model1_Var      = round(c(vc1_$vcov[1], vc1_$vcov[2]), 3),
+    PseudoR2_M1     = round(c(r2L2_1, r2L1_1), 4)
+  )
+  if (!is.null(model2)) {
+    vc2_ <- as.data.frame(VarCorr(model2))
+    r2L2_2 <- (vcb$vcov[1] - vc2_$vcov[1]) / vcb$vcov[1]
+    r2L1_2 <- (vcb$vcov[2] - vc2_$vcov[2]) / vcb$vcov[2]
+    res$Model2_Var  <- round(c(vc2_$vcov[1], vc2_$vcov[2]), 3)
+    res$PseudoR2_M2 <- round(c(r2L2_2, r2L1_2), 4)
+    res$Change      <- round(res$PseudoR2_M2 - res$PseudoR2_M1, 4)
+  }
+  res
+}
+
+pseudo_r2_all <- PseudoR2(Model1_ML, Model2_ML, Model3_ML)
+
+# ── TotalR2 helper ─────────────────────────────────────────────────────────────
+patient_data$pred2 <- predict(Model2, re.form = NA)
+patient_data$pred3 <- predict(Model3, re.form = NA)
+totalR2_2 <- cor(patient_data$pain_score, patient_data$pred2, use = "complete.obs")^2
+totalR2_3 <- cor(patient_data$pain_score, patient_data$pred3, use = "complete.obs")^2
+
+```
+
+---
+
+## `r ji('clipboard')` Study Overview
+
+**The Research Question**
+
+<small>
+
+> **Can clinic-level characteristics predict patient pain?**
+
+</small>
+
+.pull-left-50[
+
+**The Data**
+
+`r ji('hospital')` **`r dplyr::n_distinct(patient_data$clinic_id)`** clinics 
+
+`r ji('face_with_thermometer')` **`r nrow(patient_data)`** patients 
+
+Patients per clinic: **`r min(table(patient_data$clinic_id))`-`r max(table(patient_data$clinic_id))`**  
+
+DV: **Pain Score** (0–100 scale)
+
+</small>
+
+]
+
+.pull-right-50[
+
+.center[
+**Clinic-Level Predictors**
+
+<small><small>
+
+| Predictor | Type | 
+|-----------|------|
+| `r ji('hospital')` Clinic Size | Continuous | 
+| `r ji('pill')` Protocol Type | Binary | 
+
+</small></small>
+
+]
+]
+
+---
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+set.seed(46811)
+
+plot_df <- patient_data[patient_data$clinic_id %in% 1:6, ]
+plot_df$clinic_label <- paste0("Clinic ", plot_df$clinic_id)
+
+# Seattle Children's color palette
+sc_palette <- c(
+  "#00B5AD",  # Teal
+  "#8DC63F",  # Bright Green
+  "#00A9E0",  # Light Blue
+  "#EB7B35",  # Orange
+  "#A7A9AC",  # Warm Gray
+  "#4B4F54"   # Dark Gray
+)
+p8 <- ggplot(
+  plot_df,
+  aes(
+    x = factor(clinic_label),
+    y = pain_score,
+    color = clinic_label
+  )
+) +
+
+  geom_jitter(
+    position = position_jitter(width = 0.15),
+    alpha = 0.65,
+    size = 4
+  ) +
+
+  stat_summary(
+    fun = mean,
+    geom = "crossbar",
+    width = 0.5,
+    color = "#4B4F54",
+    linewidth = 0.9
+  ) +
+
+  scale_y_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(0, 100),
+    expand = expansion(mult = c(0.02, 0.02))
+  ) +
+
+  scale_color_manual(values = sc_palette) +
+
+  labs(
+    title = "Pain Scores Across Six Clinics",
+    subtitle = "Horizontal bars represent clinic means",
+    x = "Clinic",
+    y = "Pain Score"
+  ) +
+
+  theme_classic(base_size = 18) +
+
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    axis.text = element_text(color = "#4B4F54"),
+    legend.position = "none"
+  )
+
+ggsave(here::here('slides','img','clinic_plot.png'), plot = p8, width = 6.5, height = 6.5, dpi = 300)
+
+```
+
+.center[
+
+<img src=`r here::here('slides','img','clinic_plot.png')` style="width:550px; display:block; margin:-40px auto -20px auto;">
+
+<small>
+
+Patients in the **same clinic** may be more similar to each other than to patients in other clinics.
+
+</small>
+
+]
+
+---
+
+## `r ji('triangular_ruler')` Model Series Overview
+
+```{r model-overview-table}
+
+model_tbl <- data.frame(
+  Model = c("Model 0", "Model 1", "Model 2", "Model 3"),
+  Name  = c("Single-Level Null", "Empty MLM (Null)", 
+            "Main Effects", "Interaction"),
+  Predictors = c("None", "None (+ random intercept)",
+                 "Clinic Size + Protocol Type",
+                 "Size × Protocol Interaction"),
+  Parameters = c(
+    attr(logLik(Model0), "df"),
+    attr(logLik(Model1), "df"),
+    attr(logLik(Model2), "df"),
+    attr(logLik(Model3), "df")
+  ),
+  AIC = round(c(AIC(Model0), AIC(Model1), AIC(Model2), AIC(Model3)), 1),
+  BIC = round(c(BIC(Model0), BIC(Model1), BIC(Model2), BIC(Model3)), 1)
+)
+
+kable(model_tbl, align = "llllrr") |>
+  kable_styling(bootstrap_options = c("striped", "hover"),
+                full_width = TRUE, font_size = 18) |>
+  row_spec(2, bold = TRUE, background = "#e8f4fd") |>
+  column_spec(1, bold = TRUE)
+
+```
+
+There are many more possible extensions. 
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   From 1-level to 2-level model
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   From 1-level to 2-level model
+
+.pull-left-50[
+.center[
+.highlight[**<span style="color:#FFFFFF;">1-level Intercept Only</span>**]
+
+$$y_i = \beta_0 + \text{e}_i$$
+
+**ONE** source of variance:
+$$\text{e}_{i} \sim N(0, \sigma_\text{e}^2)$$
+<br>
+<small>
+*i* = level 1, <span style="color:#EB7B35;">*j*</span> = level 2
+</small>
+]
+]
+.pull-right-50[
+.center[
+.highlight[**<span style="color:#FFFFFF;">2-level Intercept Only</span>**]
+
+$$\text{Level 1: } y_{i\color{#EB7B35}{j}} = \beta_{0\color{#EB7B35}{j}} + \text{e}_{i\color{#EB7B35}{j}}$$
+$$\text{Level 2: } \beta_{0\color{#EB7B35}{j}} = \gamma_{00} + u_{0\color{#EB7B35}{j}}$$
+**TWO** sources of variance:
+$$\text{e}_{ij} \sim N(0, \sigma_\text{e}^2)$$
+$$u_{0j} \sim N(0, \tau_{00})$$
+]
+]
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   From 1-level to 2-level model
+
+.highlight[**<span style="color:#FFFFFF;">1-level Intercept Only</span>**]
+<br>
+.left[
+**R code:**
+<pre style="font-size:0.7em;">
+m0 <- lm(y ~ 1, data = df)
+summary(m0)
+</pre>
+] 
+
+.highlight[**<span style="color:#FFFFFF;">2-level Intercept Only</span>**]
+<br>
+.left[
+**R code:**
+<pre style="font-size:0.7em;">
+m1 <- lmer(y ~ 1 + (1 | cluster), data = df)
+summary(m1)
+</pre>
+] 
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Model 0 Single-Level Null
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Model 0 Single-Level Null
+
+.center[
+
+$$
+y_i = \color{#00B5AD}{\beta_0} + \color{#EB7B35}{\text{e}_i}
+$$
+
+**Fixed Effect**
+
+<small>
+
+| Parameter | Estimate | SE |
+|-----------|----------|----|
+| $\color{#00B5AD}{\beta_0}$ (Mean) | `r round(summary(Model0)$coefficients[1], 2)` | `r round(summary(Model0)$coefficients[2], 2)` |
+
+</small>
+
+**Random Effects**
+
+<small>
+
+| Source | Variance | SD |
+|--------|----------|----|
+| Total ($\color{#EB7B35}{\sigma_\text{e}^2}$) | `r round(summary(Model0)$sigma^2, 3)` | `r round(summary(Model0)$sigma, 3)` |
+
+</small>
+
+]
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Empty MLM (Null)
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Empty MLM (Null)
+
+.center[
+
+**Fixed Effect**
+
+<small>
+
+| Parameter | Estimate | SE |
+|-----------|----------|----|
+| $\gamma_{00}$ (Grand Mean) | `r round(fixef(Model1)[1], 2)` | `r round(sqrt(diag(vcov(Model1)))[1], 2)` |
+
+</small>
+
+**Random Effects**
+
+<small>
+
+| Source | Variance | SD |
+|--------|----------|----|
+| Between-Clinic ($\tau_{00}$) | `r round(tau_u0, 3)` | `r round(sqrt(tau_u0), 3)` |
+| Within-Clinic ($\sigma_\text{e}^2$) | `r round(sigma_e, 3)` | `r round(sqrt(sigma_e), 3)` |
+| **Total** | **`r round(tau_u0 + sigma_e, 3)`** | |
+
+</small>
+
+]
+
+---
+
+## `r ji('bar_chart')` Intraclass Correlation (ICC)
+
+**What is the ICC?**
+
+$$\text{ICC} = \frac{\tau_{00}}{\tau_{00} + \sigma_\text{e}^2} = \frac{`r round(tau_u0, 3)`}{`r round(tau_u0, 3)` + `r round(sigma_e, 3)`} = `r round(icc_manual, 3)`$$
+
+**Three Interpretations**  
+
+<small><small>
+
+- **Proportion:** `r round(icc_manual * 100, 1)`% of variance in pain is **between clinics**
+
+- **Correlation:** Patients from the same clinic correlate at **r = `r round(icc_manual, 3)`**
+
+- **Effect Size:** `r ifelse(icc_manual < 0.05, "Small", ifelse(icc_manual < 0.10, "Medium", "Large"))` clustering effect
+
+</small>
+
+> `r ji('warning')` No ICC value is “safe” to ignore.
+
+</small>
+
+```{r icc-pie, fig.height=4.5, fig.width=4.5, eval=F}
+
+pie_df <- data.frame(
+  Source   = c("Between-Clinic\n(ICC)", "Within-Clinic"),
+  Variance = c(tau_u0, sigma_e),
+  Pct      = c(icc_manual, 1 - icc_manual)
+)
+ggplot(pie_df, aes(x = "", y = Variance, fill = Source)) +
+  geom_col(width = 1, color = "white", linewidth = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(round(Pct * 100, 1), "%")),
+            position = position_stack(vjust = 0.5),
+            size = 6, fontface = "bold", color = "white") +
+  scale_fill_manual(values = c("#2196F3", "#FF7043")) +
+  labs(#title = "Variance Partition",
+       fill  = NULL) +
+  theme_void(base_size = 14) +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        legend.position = "bottom")
+```
+
+---
+
+## `r ji('zap')` Design Effect
+
+**Clustering inflates variance (less info than you think)**
+
+$$
+\small
+\text{DEFF} = 1 + (\bar{n} - 1) \times \text{ICC}
+$$
+$$
+\small
+= 1 + (`r round(avg_cluster_size, 1)` - 1) \times `r round(icc_manual, 3)` = `r round(design_effect, 2)`
+$$
+
+**`r ji('warning')` Effective Sample Size**
+
+$$
+\small
+N_{\text{eff}} = \frac{N}{\text{DEFF}} = \frac{`r nrow(patient_data)`}{`r round(design_effect, 2)`} \approx `r round(effective_n, 0)`
+$$
+
+---
+
+## `r ji('thinking')` Likelihood Ratio Test 
+
+**Hypothesis:** 
+
+$\small H_0: \tau_{00} = 0 \space \color{gray}{\text{(no clustering)}} \quad \quad H_1: \tau_{00} > 0 \space \color{gray}{\text{(clustering exists)}}$
+
+**Result:** 
+
+$\small -2 \Delta \text{LL} (df = `r attr(logLik(Model1), "df") - attr(logLik(Model0), "df")`) = `r round(as.numeric(lrt_stat), 2)` \text{, p } `r if(pchisq(as.numeric(lrt_stat), df = attr(logLik(Model1), "df") - attr(logLik(Model0), "df"), lower.tail = FALSE) < 0.001){"< .001"} else {paste0("= ", round(pchisq(as.numeric(lrt_stat), df = attr(logLik(Model1), "df") - attr(logLik(Model0), "df"), lower.tail = FALSE), 4))}`$
+
+<style="clear: both;">
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+Model improves!
+</span>**
+]
+]
+
+**R code:**
+<pre style="font-size:0.7em;">
+lrt_stat <- -2 * (logLik(Model0) - logLik(Model1))
+p_value <- pchisq(lrt_stat, df = 1, lower.tail = FALSE)
+</pre>
+
+---
+
+## `r ji('face_with_head_bandage')` Expected Pain Score Range
+
+$$\small \text{95% CI} = \gamma_{00} \pm 1.96\sqrt{\tau_{00}} \quad = `r round(fixed_int, 2)` \pm 1.96 \times `r round(ri_sd, 2)` = [`r round(ri_lower, 1)`, \; `r round(ri_upper, 1)`]$$
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+x_seq <- seq(35, 65, length.out = 300)
+dens  <- dnorm(x_seq, mean = fixed_int, sd = ri_sd)
+shade <- data.frame(x = x_seq, y = dens)
+
+p9 <- ggplot(shade, aes(x, y)) +
+  geom_area(data = subset(shade, x >= ri_lower & x <= ri_upper),
+            fill = "#2196F3", alpha = 0.3) +
+  geom_line(linewidth = 1.2, color = "#1565C0") +
+  geom_vline(xintercept = fixed_int, linetype = "dashed",
+             color = "#E53935", linewidth = 1) +
+  #annotate("text", x = fixed_int, y = max(dens) * 1.05,
+  #         label = paste0("Grand Mean\n", round(fixed_int, 1)),
+  #         hjust = 0.5, size = 3.5, color = "#E53935") +
+  labs(#title = "Expected Distribution of Clinic Means",
+       #subtitle = paste0("95% of clinics: ", round(ri_lower, 1),
+       #                  " – ", round(ri_upper, 1)),
+       x = "Mean Pain Score", y = "Density") +
+  theme_minimal(base_size = 36) +
+  theme(plot.title = element_text(face = "bold"))
+
+ggsave(here::here('slides','img','pain_ci_plot.png'), plot = p9, width = 12, height = 6.5, dpi = 300)
+
+```
+
+.center[
+
+<small>
+
+**Expected Distribution of Clinic Means**
+
+`r paste0("95% of clinics: ", round(ri_lower, 1), " – ", round(ri_upper, 1))`
+
+</small>
+
+<img src=`r here::here('slides','img','pain_ci_plot.png')` style="width:580px; display:block; margin:10px auto -20px auto;">
+
+]
+
+---
+class: inverse, center, middle
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Model 2: Main Effects
+
+Adding Level-2 Predictors: 
+
+Clinic Size & Protocol Type
+
+---
+
+## Model 2: Equations & Fixed Effects
+
+.pull-left-50[
+
+<small>
+
+$$\color{grey}{\text{Level 1: }} y_{pc} = \beta_{0c} + \text{e}_{pc}$$
+
+$$\small \begin{split} \color{grey}{\text{Level 2: }} \beta_{0c} = \gamma_{00} \\ + \gamma_{01}(\text{size50}_c) \\ + \gamma_{02}(\text{protocol}_c) \\ + U_{0c} \end{split}$$
+
+**R code:**
+
+</small>
+
+<pre style="font-size:0.658em;">
+Model2 <- lmer(
+  pain_score ~ 1 + size50 + 
+    protocol_type + (1 | clinic_id),
+  data = patient_data, REML = TRUE)
+</pre>
+
+
+]
+
+.pull-right[
+**Fixed Effects**
+
+<small><small>
+
+```{r m2-fixed, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+fe2 <- as.data.frame(coef_table2)
+fe2 <- round(fe2, 3)
+rownames(fe2) <- c("γ₀₀ Intercept", "γ₀₁ Size50", "γ₀₂ Protocol")
+colnames(fe2) <- c("Estimate", "SE", "df", "t", "p")
+
+kable(fe2[, c("Estimate","SE","t","p")], align = "rrrr") |>
+  kable_styling(font_size = 15, full_width = TRUE) |>
+  row_spec(0, bold = TRUE) |>
+  column_spec(5, bold = TRUE,
+              color = ifelse(fe2$p < .05, "green", "gray"))
+
+```
+
+**Intercept**: Expected mean pain = `r round(fixef(Model2)[1], 2)` for clinic size of 50 patients on the Standard protocol
+
+**Size50**: `r round(fixef(Model2)[2], 2)` pts per each additional patient past 50
+
+**Protocol**: Enhanced clinics `r abs(round(fixef(Model2)[3], 2))` pts `r ifelse(fixef(Model2)[3] < 0, "lower", "higher")` given clinic size of 50 patients.
+
+</small></small>
+]
+
+---
+
+## Model 2: Variance & Model Fit
+
+.pull-right-45[
+
+<small><small>
+
+<style="clear: both;">
+
+### $\text{Pseudo-}R^2$ (7.5% of the 28.3% possible)
+
+<small></small>
+
+```{r pseudo-r2-m2, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+pr2 <- pseudo_r2_all[, c("Component","Base_Var","Model1_Var","PseudoR2_M1")]
+colnames(pr2) <- c("Component", "Base Var", "Model 2 Var", "Pseudo-R²")
+kable(pr2, align = "lrrr") |>
+  kable_styling(font_size = 16, full_width = TRUE) |>
+  row_spec(0, bold = TRUE)
+
+```
+
+</small><small>
+
+### $\text{Total R}^2$ (`r round(totalR2_2 * 100, 2)`% of the total variance)
+
+</small></small>
+
+]
+
+.pull-left-50[
+
+**LRT: Model 1 vs Model 2**
+
+<small><small>
+
+```{r lrt-m1m2, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+lrt12 <- data.frame(
+  Model = c("Model 1 (Empty MLM)", "Model 2 (Main Effects)"),
+  Params = c(3, 5),
+  AIC   = round(c(AIC(Model1_ML), AIC(Model2_ML)), 2),
+  Chisq = c(NA, round(lrt_compare$Chisq[2], 3)),
+  df    = c(NA, lrt_compare$Df[2]),
+  p     = c(NA, round(lrt_compare$`Pr(>Chisq)`[2], 4))
+)
+kable(lrt12, align = "lrrrr", na.string = "—") |>
+  kable_styling(font_size = 15, full_width = TRUE) |>
+  row_spec(2, bold = TRUE,
+           background = ifelse(lrt_compare$`Pr(>Chisq)`[2] < .05,
+                               "#e8f5e9", "#fff3e0"))
+
+```
+
+</small>
+
+**Conditional ICC**
+After adding Level-2 predictors:  
+
+ICC = **`r round(cond_icc, 3)`** (`r round(cond_icc * 100, 1)`% between-clinic variance remains)
+
+</small>
+
+]
+
+---
+class: inverse, center, middle
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">   Model 3: Interaction
+
+Adding the Size x Protocol Interaction
+
+---
+
+## Model 3: Equations & Fixed Effects
+
+.pull-left-50[
+
+$$\small \begin{aligned} 
+\color{grey}{\text{Level 2: }} \beta_{0c} = \, &\gamma_{00} \\ 
+&+ \gamma_{01}(\text{size50}_{c}) \\ 
+&+ \gamma_{02}(\text{protocol}_{c}) \\ 
+&+ \gamma_{03}(\text{size50}_{c} \times \text{protocol}_{c}) \\ 
+&+ U_{0c} 
+\end{aligned}$$
+
+<small>
+
+**R code:**
+
+<pre style="font-size:0.8em;">
+Model3 <- lmer(pain_score ~ 1 
++ size50 * protocol_type 
++ (1 | clinic_id),
+  data = patient_data, REML = FALSE
+</pre>
+
+<small><small>
+
+| Protocol | Simple Slopes |
+|----------|-----------|
+| Standard | $\gamma_{01}$ = `r round(fixef(Model3)[2], 2)` |
+| Enhanced | $\gamma_{01} + \gamma_{03}$ = `r round(fixef(Model3)[2] + fixef(Model3)[4], 2)` |
+
+</small></small>
+
+]
+
+.pull-right-50[
+
+**Fixed Effects**
+
+```{r m3-fixed, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+fe3 <- as.data.frame(coef_table3)
+fe3 <- round(fe3, 3)
+rownames(fe3) <- c("γ₀₀ Intercept", "γ₀₁ Size50",
+                   "γ₀₂ Protocol", "γ₀₃ Size×Protocol")
+colnames(fe3) <- c("Estimate","SE","df","t","p")
+
+kable(fe3[, c("Estimate","SE","t","p")], align = "rrrr") |>
+  kable_styling(font_size = 14, full_width = TRUE) |>
+  row_spec(0, bold = TRUE) |>
+  row_spec(4, background = "#fff9c4") |>
+  column_spec(5, bold = TRUE,
+              color = ifelse(fe3$p < .05, "green", "gray"))
+```
+
+<small>
+
+> Interaction $\gamma_{03}$ = `r round(fixef(Model3)[4], 2)`, *p* = `r round(coef_table3[4, 5], 3)`
+
+</small>
+
+]
+
+---
+
+## Interaction Visualization
+
+```{r interaction-plot, fig.height=4.8, fig.width=10, fig.align='center'}
+
+pred_data <- expand.grid(
+  size50        = seq(-2, 2, by = 0.1),
+  protocol_type = c(0, 1)
+)
+pred_data$clinic_size    <- pred_data$size50 * 50 + 150
+pred_data$predicted_pain <- predict(Model3, newdata = pred_data, re.form = NA)
+pred_data$Protocol       <- factor(pred_data$protocol_type,
+                                   labels = c("Standard", "Enhanced"))
+
+ggplot(pred_data, aes(x = clinic_size, y = predicted_pain,
+                      color = Protocol, linetype = Protocol)) +
+  geom_line(linewidth = 1.8) +
+  geom_ribbon(aes(ymin = predicted_pain - 1.5,
+                  ymax = predicted_pain + 1.5,
+                  fill  = Protocol), alpha = 0.1, color = NA) +
+  scale_color_manual(values = c("Standard" = "#EB7B35", "Enhanced" = "#00B5AD")) +
+  scale_fill_manual( values = c("Standard" = "#EB7B35", "Enhanced" = "#00B5AD")) +
+  scale_x_continuous(breaks = seq(50, 250, 50)) +
+  labs(
+    title    = "Predicted Pain Scores by Clinic Size and Protocol Type",
+    subtitle = "Model 3 — fixed-effects predictions (shading = +/- 1.5 pts illustration)",
+    x        = "Clinic Size (number of patients)",
+    y        = "Predicted Mean Pain Score",
+    color    = "Protocol", linetype = "Protocol", fill = "Protocol"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    legend.position  = "bottom",
+    plot.title       = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+```
+
+<small><small>
+
+> The lines diverge as clinic size increases — this is the interaction. Enhanced protocol shows steeper improvement in larger clinics. Within our observed data range, the lines have not yet crossed, so there is no difference (*p* > .05).
+
+</small></small>
+
+---
+
+## Interaction Visualization 
+
+```{r interaction-plot2, fig.height=4.8, fig.width=10, fig.align='center'}
+
+pred_data <- expand.grid(
+  size50        = seq(-2, 5, by = 0.1),  # extended to reach clinic_size = 400
+  protocol_type = c(0, 1)
+)
+pred_data$clinic_size    <- pred_data$size50 * 50 + 150
+pred_data$predicted_pain <- predict(Model3, newdata = pred_data, re.form = NA)
+pred_data$Protocol       <- factor(pred_data$protocol_type,
+                                   labels = c("Standard", "Enhanced"))
+
+ggplot(pred_data, aes(x = clinic_size, y = predicted_pain,
+                      color = Protocol, linetype = Protocol)) +
+  geom_line(linewidth = 1.8) +
+  geom_ribbon(aes(ymin = predicted_pain - 1.5,
+                  ymax = predicted_pain + 1.5,
+                  fill  = Protocol), alpha = 0.1, color = NA) +
+  scale_color_manual(values = c("Standard" = "#EB7B35", "Enhanced" = "#00B5AD")) +
+  scale_fill_manual( values = c("Standard" = "#EB7B35", "Enhanced" = "#00B5AD")) +
+  scale_x_continuous(breaks = seq(50, 400, 50)) +  # extend breaks to 400
+  labs(
+    title    = "Predicted Pain Scores by Clinic Size and Protocol Type",
+    subtitle = "Model 3 — fixed-effects predictions (shading = +/-1.5 pts illustration)",
+    x        = "Clinic Size (number of patients)",
+    y        = "Predicted Mean Pain Score",
+    color    = "Protocol", linetype = "Protocol", fill = "Protocol"
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    legend.position  = "bottom",
+    plot.title       = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+```
+
+<small><small>
+
+> Extending the x-axis reveals where the lines eventually cross - the point at which one protocol overtakes the other. This is where the Standard vs. Enhanced protocols are significantly different. 
+
+</small></small>
+
+---
+
+## Model 3: Fit & Comparison
+
+.pull-left-50[
+
+**LRT: Model 2 vs Model 3**
+
+```{r lrt-m2m3}
+lrt23 <- data.frame(
+  Model  = c("Model 2 (Main Effects)", "Model 3 (Interaction)"),
+  Params = c(5, 6),
+  AIC    = round(c(AIC(Model2_ML), AIC(Model3_ML)), 2),
+  Chisq  = c(NA, round(lrt_compare23$Chisq[2], 3)),
+  df     = c(NA, lrt_compare23$Df[2]),
+  p      = c(NA, round(lrt_compare23$`Pr(>Chisq)`[2], 4))
+)
+kable(lrt23, align = "lrrrr", na.string = "—") |>
+  kable_styling(font_size = 15, full_width = TRUE) |>
+  row_spec(2, bold = TRUE,
+           background = ifelse(lrt_compare23$`Pr(>Chisq)`[2] < .05,
+                               "#e8f5e9", "#fff3e0"))
+```
+
+Model does not improve.
+
+]
+
+.pull-right-50[
+
+.center[
+**Pseudo-R2 Comparison**
+]
+
+```{r pseudo-r2-all-v2}
+
+pr2b <- pseudo_r2_all[, c("Component","PseudoR2_M1","PseudoR2_M2","Change")]
+colnames(pr2b) <- c("Component", "Model 2", "Model 3", "Δ var")
+kable(pr2b, align = "lrrr") |>
+  kable_styling(font_size = 15, full_width = TRUE) |>
+  row_spec(0, bold = TRUE)
+
+```
+
+.center[
+**Total R2**
+]
+
+<small><small><small>
+
+| Model | Total R² |
+|-------|----------|
+| Model 2 (Main Effects) | `r round(totalR2_2 * 100, 2)`% |
+| Model 3 (Interaction)  | `r round(totalR2_3 * 100, 2)`% |
+| $$\Delta R^2$$ | **`r round((totalR2_3 - totalR2_2) * 100, 3)`** |
+
+</small></small></small>
+
+]
+
+---
+
+## `r emo::ji('rocket')` Next Steps & Extensions
+
+**Immediate Next Steps**
+
+<small>
+
+`r emo::ji('bust_in_silhouette')` **Add Level-1 predictors** (patient age, diagnosis severity, visit frequency). This is where `r emo::ji('rocket')`
+
+- `r emo::ji('chart_with_upwards_trend')` **Test random slopes** - do Level-1 effects vary by clinic?
+
+- `r emo::ji('twisted_rightwards_arrows')` **Cross-level interactions** - do clinic characteristics moderate patient-level effects?
+
+`r emo::ji('up')` **Consider three-level** structure (visits - patients - clinics)
+
+</small>
+
+---
+
+class: inverse, center, middle
+
+# `r emo::ji('mortar_board')` Thank You!   
+
+Additional Questions?
+
+.pull-left-45[
+
+.left[
+
+<small>
+
+Key Takeaways:
+`r emo::ji('one')` Always check for clustering (ICC) in clinical data
+`r emo::ji('two')` ICC = `r round(icc_manual, 3)` which was huge (still MLM is *almost always* essential anyway)
+`r emo::ji('three')` Effective N = `r round(effective_n, 0)`, not `r nrow(patient_data)` watch out for the design effect when thinking about powerign your study
+
+</small>
+
+]
+]
+
+.pull-right-45[
+
+.left[
+
+<small>
+
+The MLM Advantage
+
+`r emo::ji('white_check_mark')` Accounts for non-independence
+`r emo::ji('white_check_mark')` Partitions variance appropriately
+`r emo::ji('white_check_mark')` Handles unbalanced cluster sizes
+`r emo::ji('white_check_mark')` Correct standard errors & inference
+
+</small>
+
+]
+
+]
+
+

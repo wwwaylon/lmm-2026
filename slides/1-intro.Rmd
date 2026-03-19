@@ -1,0 +1,3648 @@
+---
+title: >
+  <table style="width:100%; border:none; border-collapse:collapse; background:transparent; cellpadding:0; cellspacing:0;">
+  <tr>
+    <td style="border:none; padding:0; vertical-align:middle; text-align:left;">
+      <div style="font-size:1.25em; font-weight:bold; line-height:1.1;">Multilevel Modeling</div>
+      <div style="font-size:1.25em; font-weight:bold; line-height:1.1;">in Clinical Research</div>
+    </td>
+    <td style="border:none; padding:0; vertical-align:middle; text-align:right;">
+      <img src="`r here::here('slides','img','cfa_icon_emoji.png')`" style="width:150px; display:inline-block; margin-left:-10px;">
+    </td>
+  </tr> </table>
+subtitle: "<small>Concepts and Applications</small>"
+author: "`r paste(params$author, collapse = ' & ')`"
+date: "`r paste0(params$location, ', ', params$date)`"
+params:
+  author: ["Author Name"]
+  date: "Placeholder Date"
+  location: "Placeholder Location"
+---
+exclude: true
+
+```{r child = "_setup.Rmd"}
+```
+
+```{r title_emoji, echo=FALSE, eval=FALSE}
+
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(here)
+
+# Create the graph with smaller arrows and transparent background
+graph <- grViz("
+digraph cfa_icon_emoji {
+
+  graph [
+    layout=dot,
+    rankdir=TB,
+    bgcolor=transparent,
+    ranksep=0.25,
+    nodesep=0.15
+  ];
+
+  // Nodes with thick black borders
+  node [
+    shape=circle,
+    width=0.60,
+    height=0.60,
+    fixedsize=true,
+    label='',
+    style=filled,
+    color='black',     // border color
+    penwidth=2.5         // border thickness
+  ];
+
+  school [fillcolor='#FF8A80'];
+  classroom1 [fillcolor='#FFB199'];
+  classroom2 [fillcolor='#FFB199'];
+
+  student1 [fillcolor='#FFD8C2'];
+  student2 [fillcolor='#FFD8C2'];
+  student3 [fillcolor='#FFD8C2'];
+  student4 [fillcolor='#FFD8C2'];
+
+  // Black arrows
+  edge [
+    arrowsize=0.6,
+    penwidth=2,
+    color='black',
+    headclip=true,
+    tailclip=true
+  ];
+
+  school -> classroom1;
+  school -> classroom2;
+  classroom1 -> student1;
+  classroom1 -> student2;
+  classroom2 -> student3;
+  classroom2 -> student4;
+
+  { rank=same; classroom1; classroom2; }
+}
+")
+
+
+# Export to SVG
+svg_graph <- export_svg(graph)
+
+# Save PNG, transparent by default
+rsvg_png(
+  charToRaw(svg_graph),
+  file = here::here("slides", "img", "cfa_icon_emoji.png"),
+  width = 1200,
+  height = 1200
+)
+
+```
+
+---
+
+#  About me
+
+[Waylon Howard](https://wwwaylon.github.io/) (waylon.howard@seattlechildrens.org)
+
+- Principal Biostatistician and Quantitative Methodologist at: [*Biostatistics, Epidemiology and Analytics in Research (BEAR)*](https://www.seattlechildrens.org/research/resources/bear) (SCRI) 
+
+--
+  - Research methods, statistics, and measurement
+  - Grant writing, analysis planning, and manuscripts
+  - Methodological innovation and applied solutions
+
+<style="clear: both;">
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+I help researchers answer the right questions!
+</span>**
+]
+]
+
+---
+
+# Preliminaries
+
+Slides and material are available at
+
+.center[
+https://github.com/wwwaylon/chbd-lgm-2025
+]
+
+- The talk consists of a combination of slides and hands-on exercises
+- `r emo::ji('speech_balloon')` Feel free to ask questions anytime!
+- We will primarily rely on [`R`](https://www.r-project.org/), [`RStudio`](https://www.rstudio.com/products/rstudio/) & [`GitHub`](https://github.com/). 
+
+**For my research, I typically use Mplus and R (`lmer`).**
+
+---
+  
+.center[
+## Software for Multilevel Modeling
+]
+
+.pull-left-45[
+  
+<small><small><small>
+    
+| Software | MLM Module |
+|----------|------------|
+| R | `lme4`, `nlme`, `xxM`, `DESeq2` |
+| SAS | `PROC MIXED` |
+| SPSS | `MIXED` |
+| Stata | `xtmixed` / `mixed` |
+| LISREL | `MULTILEV` |
+| HLM | Purpose-built, widely cited |
+| MLwiN | Strong for complex structures |
+| EQS | Built-in |
+| S-Plus | Built-in |
+| SYSTAT | Built-in |
+| Mplus | SEM + MLM, highly flexible |
+    
+</small></small></small>
+    
+]
+
+.pull-right-45[
+  
+.center[
+<small>
+
+.highlight[
+**<span style="color:#FFFFFF;">
+My Recommendations
+</span>**
+]
+   
+</small>
+]
+  
+<small>
+    
+**For research:**
+  
+<small><small>
+    
+> **Mplus** for flexibility with SEM and complex models    
+
+> **R (`lme4`)** for reproducibility and custom extensions
+  
+</small>
+    
+No single tool is best for every situation - choose based on **model complexity**, **team expertise**, and **reproducibility needs**. Also consider factors like **collaboration**, and **cost**.
+  
+</small></small>
+    
+]
+
+---
+  
+## Many names - same general idea
+
+**Model frameworks**
+
+<small>
+
+> Multilevel models, Hierarchical linear models (HLM), Mixed-effects models, Linear mixed models (LMM), Growth curve models, Random coefficient models
+
+</small>
+
+**Model components**
+
+<small>
+
+> Variance components, Random effects / coefficients, Random intercepts and slopes, Varying coefficients, Intercepts- or slopes-as-outcomes, *Cross-level interactions*, *Contextual effects*
+
+`r emo::ji('point_right')` **These are all variations of mixed models.**
+
+</small>
+
+---
+  
+## Plan Today
+  
+```{r schedule, echo = F, message=FALSE, warning=FALSE}
+
+# Updated schedule (concise version)
+schedule <- data.frame(
+  "Time" = c(
+    "0–10",
+    "10–25",
+    "25–40",
+    "40–55",
+    "55–85",
+    "85–90"
+  ),
+  "Segment" = c(
+    "Why is this important?",
+    "Estimation in Statistical Models",
+    "How not to handle nested data",
+    "Empty means models & ICC",
+    "Conditional models & Effect Size",
+    "Next Steps & Extensions"
+  ),
+  "Key Concepts" = c(
+    "Nested data in the real world",
+    "OLS vs ML estimation",
+    "Traditional methods & limitations",
+    "Variance decomposition<br>Empty model & ICC",
+    "Model building & effect size",
+    "Extensions & resources"
+  ),
+  "Slides" = c(
+    "1–6",
+    "7–15",
+    "16–25",
+    "26–35",
+    "36–52",
+    "53–55"
+  ),
+  check.names = FALSE
+)
+
+library(knitr)
+library(kableExtra)
+
+knitr::kable(
+  schedule,
+  format = "html",
+  align = "llll",
+  escape = FALSE
+) %>%
+  kable_styling(
+    font_size = 16,
+    bootstrap_options = c("striped", "hover")
+  ) %>%
+  column_spec(1, bold = TRUE, color = "#4B4F54") %>%
+  column_spec(2, bold = TRUE, width = "23%") %>%
+  column_spec(3, width = "47%") %>%
+  row_spec(0, bold = TRUE, background = "#00A9E0", color = "white") %>%
+  row_spec(2, bold = FALSE, background = "#00A9E0", color = "white") %>%
+  row_spec(4, bold = FALSE, background = "#00A9E0", color = "white") %>%
+  row_spec(6, bold = FALSE, background = "#00A9E0", color = "white")
+
+# Seattle Children's official colors include:
+#Teal ("#00B5AD")
+#Bright Green ("#8DC63F")
+#Light Blue ("#00A9E0")
+#Warm Gray ("#A7A9AC")
+#Dark Gray ("#4B4F54")
+#orange ("#EB7B35")
+
+```
+
+---
+
+## Why multilevel models? 
+  
+```{r, echo=FALSE, fig.width=6, fig.height=4, fig.align="center", eval=T}
+
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(rsvg)
+library(here)
+
+# Create the graph with larger circles but same figure height
+graph <- grViz("
+digraph higher_order_cfa {
+
+  // Graph settings
+  graph [layout=dot, rankdir=TB, fontsize=28, bgcolor=transparent, ranksep=0.6];
+  
+  // Make circle borders thicker
+  node [shape=circle, penwidth=3];
+  edge [penwidth=2];
+
+  // Top-level hospital (largest circle)
+  node [shape=circle, fontsize=32, width=2.5, height=2.5, fixedsize=true, style=filled, fillcolor='#F59A63'];
+  school [label='Hospital 1'];
+
+  // Clinics (medium circles)
+  node [shape=circle, fontsize=28, width=1.8, height=1.8, fixedsize=true, style=filled, fillcolor='#F7B98F'];
+  classroom1 [label='Clinic 1'];
+  classroom2 [label='Clinic 2'];
+
+  // Patients (small circles)
+  node [shape=circle, fontsize=20, width=1.4, height=1.4, fixedsize=true, style=filled, fillcolor='#FAD9C6'];
+  student1 [label='Patient 1'];
+  student2 [label='Patient 2'];
+  student3 [label='Patient 3'];
+  student4 [label='Patient 4'];
+  student5 [label='Patient 5'];
+  student6 [label='Patient 6'];
+
+  // Edges: Hospital -> Clinics
+  school -> classroom1;
+  school -> classroom2;
+
+  // Edges: Clinics -> Patients
+  classroom1 -> {student1 student2 student3};
+  classroom2 -> {student4 student5 student6};
+
+  // Align clinics horizontally
+  { rank=same; classroom1; classroom2; }
+
+  // Align patients horizontally per clinic
+  { rank=same; student1; student2; student3; }
+  { rank=same; student4; student5; student6; }
+
+}")
+
+# Export to SVG
+svg_graph <- export_svg(graph)
+
+# Save PNG, transparent by default
+rsvg_png(
+  charToRaw(svg_graph),
+  file = here::here("slides", "img", "mlm.png"),
+  width = 1200,
+  height = 1200
+)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','mlm.png')` style="width:300px; display:block; margin:-60px auto -30px auto;">
+]
+
+<small><small>
+  
+- Data are clustered `r emo::ji('arrow_right')` observations are related  
+
+- Standard analyses assume **independence**
+  
+  **Example: hospital re-admissions**
+  
+> *Patients in the same hospital share unmeasured factors.*  
+> *Repeated measurements on the same patient are not independent.*
+  
+</small></small>
+  
+<style="clear: both;">
+  
+.center[
+<small><small>
+      
+.highlight[
+**<span style="color:#FFFFFF;">
+Violations of this assumption bias standard errors. 
+</span>**
+]
+</small></small>
+  ]
+
+---
+  
+## Kinds of Data Structure
+  
+```{r, echo=FALSE, fig.width=8, fig.height=4, fig.align="center", eval=T}
+    
+library(DiagrammeR)
+    
+graph <- grViz("
+digraph horizontal_levels {
+
+graph [rankdir=LR, nodesep=0.1, ranksep=0.1, splines=line, esep=0, bgcolor=transparent]
+  node [shape=box, style=none, color=none, fontsize=16]
+
+  // ---- Level 1 (left) with ports on each item ----
+  level1 [
+    label=<
+      <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='1'>
+        <TR><TD><B><U>Level 1</U></B></TD></TR>
+        <TR><TD PORT='p1' ALIGN='RIGHT'>students  </TD></TR>
+        <TR><TD PORT='p2' ALIGN='RIGHT'>corporations  </TD></TR>
+        <TR><TD PORT='p3' ALIGN='RIGHT'>spouses  </TD></TR>
+        <TR><TD PORT='p4' ALIGN='RIGHT'>cells</TD></TR>
+        <TR><TD PORT='p5' ALIGN='RIGHT'>repeated measures    </TD></TR>
+      </TABLE>
+    >, 
+  ]
+
+  // ---- Nested within box (center) - tall, no internal ports ----
+  nested [
+    label=<
+      <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0' CELLPADDING='1'>
+        <TR><TD ALIGN='CENTER'><B>are nested    </B></TD></TR>
+        <TR><TD ALIGN='CENTER'><B>within  </B></TD></TR>
+      </TABLE>
+    >,
+  shape=box,
+  style=filled,
+  height=1.5,       // in inches
+  width=1.5,
+  fixedsize=true
+  ]
+
+  // ---- Level 2 (right) with ports on each item ----
+  level2 [
+    label=<
+      <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='1'>
+        <TR><TD><B><U>Level 2</U></B></TD></TR>
+        <TR><TD PORT='q1' ALIGN='LEFT'>classrooms</TD></TR>
+        <TR><TD PORT='q2' ALIGN='LEFT'>nations</TD></TR>
+        <TR><TD PORT='q3' ALIGN='LEFT'>couples</TD></TR>
+        <TR><TD PORT='q4' ALIGN='LEFT'>biopsy samples</TD></TR>
+        <TR><TD PORT='q5' ALIGN='LEFT'>individuals</TD></TR>
+      </TABLE>
+    >
+  ]
+
+  // ---- Converging lines: all Level 1 ports connect to west center of nested ----
+  level1:p1 -> nested:w [color='#EB7B35', arrowhead=none]
+  level1:p2 -> nested:w [color='#EB7B35', arrowhead=none]
+  level1:p3 -> nested:w [color='#EB7B35', arrowhead=none]
+  level1:p4 -> nested:w [color='#EB7B35', arrowhead=none]
+  level1:p5 -> nested:w [color='#EB7B35', arrowhead=none]
+
+  // ---- Diverging lines: from east center of nested to all Level 2 ports ----
+  nested:e -> level2:q1 [color='#EB7B35', arrowhead=none]
+  nested:e -> level2:q2 [color='#EB7B35', arrowhead=none]
+  nested:e -> level2:q3 [color='#EB7B35', arrowhead=none]
+  nested:e -> level2:q4 [color='#EB7B35', arrowhead=none]
+  nested:e -> level2:q5 [color='#EB7B35', arrowhead=none]
+}
+")
+ 
+# Export to SVG
+svg_graph <- export_svg(graph)
+
+# Save PNG, transparent by default
+rsvg_png(
+  charToRaw(svg_graph),
+  file = here::here("slides", "img", "l1l2.png"),
+  width = 1200,        # width in pixels
+  height = NULL        # preserve SVG aspect ratio
+)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','l1l2.png')` style="width:600px; display:block; margin:-40px auto -40px auto;">
+]   
+
+.left[
+  
+<small><small>
+    
+<br>
+    
+- **Hierarchical (Nested)** repeated tests - students - schools - districts
+  
+- **Crossed (Non-nested)** observations within participants *and* tasks  
+  
+- **Balanced vs. Unbalanced** Experiments vs. Real-world    
+
+- **Other Structures** Temporal (time-ordered), Spatial (location-based) 
+  
+]
+
+Once you learn about hierarchical data, you start seeing examples everywhere!
+
+<small><small>
+
+*Image adapted from Preacher (2010) lecture - thanks Kris.*
+
+</small></small></small></small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**How do statistical models estimate parameters?**
+
+<small><small>
+
+| Model | Outcome | Effects | Sampling |
+|------|---------------------|--------|----------------|
+| **Linear Model** | **Normal** | **Fixed** | **1 level** |
+| <span style="color:#A7A9AC;">Generalized Linear Model</span> | <span style="color:#A7A9AC;">Any</span>  | <span style="color:#A7A9AC;">Fixed</span> | <span style="color:#A7A9AC;">1 level</span> |
+| <span style="color:#A7A9AC;">Linear *Mixed* Model</span> | <span style="color:#A7A9AC;">Normal</span> | <span style="color:#A7A9AC;">Fixed + Random</span> | <span style="color:#A7A9AC;">2+ levels</span> |
+| <span style="color:#A7A9AC;">Generalized Linear *Mixed* Model</span> | <span style="color:#A7A9AC;">Any</span> | <span style="color:#A7A9AC;">Fixed + Random</span> | <span style="color:#A7A9AC;">2+ levels</span> |
+
+</small>
+
+**`r emo::ji("key")` Key question:**
+
+> How do we estimate the parameters of these models?
+
+We start with Ordinary Least Squares (OLS)
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**Ordinary Least Squares (OLS)**
+
+$$
+\color{gray}{\text{Linear regression: }} \text{y}_i = \beta_0 + \beta_1 \text{x}_i + \text{e}_i
+$$
+
+$$
+\color{gray}{\text{Residual: }} \text{e}_i = \text{y}_i - \hat{\text{y}}_i
+$$
+
+$$
+\small \color{gray}{\text{OLS chooses coefficients that minimize: }} \sum_{i=1}^{n}(\text{y}_i - \hat{\text{y}}_i)^2
+$$
+
+**`r emo::ji("bulb")` Core idea**
+
+> Find the line that minimizes the total squared prediction error.
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+```{r ols-squares-plot, echo=FALSE, fig.align="center", fig.width=9, fig.height=4.5, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(dplyr)
+
+set.seed(42)
+n <- 12
+x <- seq(-5, 15, length.out = n)
+y <- 0.9 * x + rnorm(n, 0, 3)
+df_ols <- data.frame(x = x, y = y)
+
+fit <- lm(y ~ x, data = df_ols)
+df_ols$yhat <- predict(fit)
+df_ols$resid <- df_ols$y - df_ols$yhat
+
+# Build square polygons for each residual
+make_square <- function(x0, y0, yhat0) {
+  side <- y0 - yhat0
+  if (side >= 0) {
+    data.frame(
+      px = c(x0, x0 - abs(side), x0 - abs(side), x0),
+      py = c(yhat0, yhat0, y0, y0)
+    )
+  } else {
+    data.frame(
+      px = c(x0, x0 + abs(side), x0 + abs(side), x0),
+      py = c(yhat0, yhat0, y0, y0)
+    )
+  }
+}
+
+squares <- do.call(rbind, lapply(seq_len(n), function(i) {
+  sq <- make_square(df_ols$x[i], df_ols$y[i], df_ols$yhat[i])
+  sq$id <- i
+  sq
+}))
+
+# OLS minimises the **total area** of the residual squares",
+# Each orange dashed line is a residual; each blue square is its squared value"
+
+p1 <- ggplot(df_ols, aes(x, y)) +
+  
+  coord_fixed() + #fix x-y aspect ratio else you get rectangles 
+  
+  # Data points
+  geom_point(size = 5, alpha = 0.45, color = "#FF7F00") +
+
+    scale_x_continuous(
+    breaks = seq(
+      floor(min(df_ols$x)),
+      ceiling(max(df_ols$x)+5),
+      by = 5                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.05, 0.15))
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")+ 
+  
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df_ols$y)),
+      ceiling(max(df_ols$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none",
+    plot.title    = ggtext::element_markdown(face = "bold", colour = "#1E2761"),
+    plot.subtitle = element_text(colour = "#4B4F54")
+  ) 
+  
+ggsave(here::here('slides','img','ols1_plot.png'), plot = p1, width = 4, height = 4, dpi = 300)
+
+
+
+p2 <- ggplot(df_ols, aes(x, y)) +
+  
+  coord_fixed() + #fix x-y aspect ratio else you get rectangles 
+  
+  # Regression line
+  geom_smooth(method = "lm", se = FALSE, colour = "#4B4F54", linewidth = 2.5) +
+  
+  # Data points
+  geom_point(size = 5, alpha = 0.45, color = "#FF7F00") +
+  
+    scale_x_continuous(
+    breaks = seq(
+      floor(min(df_ols$x)),
+      ceiling(max(df_ols$x)+5),
+      by = 5                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.05, 0.15))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df_ols$y)),
+      ceiling(max(df_ols$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)") +
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none",
+    plot.title    = ggtext::element_markdown(face = "bold", colour = "#1E2761"),
+    plot.subtitle = element_text(colour = "#4B4F54")
+  ) 
+  
+
+ggsave(here::here('slides','img','ols2_plot.png'), plot = p2, width = 4, height = 4, dpi = 300)
+
+
+
+p3 <- ggplot(df_ols, aes(x, y)) +
+  
+  coord_fixed() + #fix x-y aspect ratio else you get rectangles 
+ 
+    # Residual segments
+  geom_segment(aes(xend = x, yend = yhat),
+               colour = "#00B5AD", linewidth = 0.8, linetype = "dashed") +
+   
+  # Regression line
+  geom_smooth(method = "lm", se = FALSE, colour = "#4B4F54", linewidth = 2.5) +
+  # Data points
+  geom_point(size = 5, alpha = 0.45, color = "#FF7F00") +
+  
+    scale_x_continuous(
+    breaks = seq(
+      floor(min(df_ols$x)),
+      ceiling(max(df_ols$x)+5),
+      by = 5                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.05, 0.15))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df_ols$y)),
+      ceiling(max(df_ols$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none",
+    plot.title    = ggtext::element_markdown(face = "bold", colour = "#1E2761"),
+    plot.subtitle = element_text(colour = "#4B4F54")
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+ggsave(here::here('slides','img','ols3_plot.png'), plot = p3, width = 4, height = 4, dpi = 300)
+
+
+
+p4 <- ggplot(df_ols, aes(x, y)) +
+  
+  coord_fixed() + #fix x-y aspect ratio else you get rectangles 
+ 
+    geom_polygon(
+    data = squares,
+    aes(x = px, y = py, group = id),
+     fill = "#8DC63F", colour = "#A7A9AC", alpha = 0.10, linewidth = 0.2
+  ) +
+  
+  # Residual segments
+  geom_segment(aes(xend = x, yend = yhat),
+               colour = "#00B5AD", linewidth = 0.8, linetype = "dashed") +
+   
+  # Regression line
+  geom_smooth(method = "lm", se = FALSE, colour = "#4B4F54", linewidth = 2.5) +
+  # Data points
+  geom_point(size = 5, alpha = 0.45, color = "#FF7F00") +
+  
+    scale_x_continuous(
+    breaks = seq(
+      floor(min(df_ols$x)),
+      ceiling(max(df_ols$x)+5),
+      by = 5                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.05, 0.15))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df_ols$y)),
+      ceiling(max(df_ols$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.05))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none",
+    plot.title    = ggtext::element_markdown(face = "bold", colour = "#1E2761"),
+    plot.subtitle = element_text(colour = "#4B4F54")
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+ggsave(here::here('slides','img','ols4_plot.png'), plot = p4, width = 4, height = 4, dpi = 300)
+
+# Seattle Children's official colors include:
+#Teal ("#00B5AD")
+#Bright Green ("#8DC63F")
+#Light Blue ("#00A9E0")
+#Warm Gray ("#A7A9AC")
+#Dark Gray ("#4B4F54")
+#orange ("#EB7B35")
+
+```
+
+.center[
+<img src=`r here::here('slides','img','ols1_plot.png')` style="width:400px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+This scatterplot shows the relationship between a predictor **X** and an outcome **Y**. Each orange point represents an observed score.
+
+**OLS will search for the line that best predicts these values.**
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+.center[
+<img src=`r here::here('slides','img','ols2_plot.png')` style="width:400px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+**Features of the best-fitting line:** <small> Intercept $\beta_0$, Slope $\beta_1$, Residual variance </small>
+
+These parameters define the model that best predicts the data.
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+.center[
+
+<img src=`r here::here('slides','img','ols3_plot.png')` style="width:400px; display:block; margin:-40px auto -20px auto;">
+
+]  
+
+<small>
+
+A **residual** is the vertical distance to the regression line: $\text{e}_i = \text{y}_i - \hat{\text{y}}_i$
+
+But OLS does **not minimize the raw residuals**.
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**Why Square Residuals?**
+
+<small><small>
+
+| Strategy | Problem |
+|----------|---------|
+| Minimize **sum** of residuals | Positive & negative cancel |
+| Minimize **sum of absolute** residuals | Difficult to solve |
+| Minimize **sum of squared** residuals | Works `r emo::ji("trophy")` `r emo::ji("sparkles")` | 
+
+</small></small>
+
+<small>
+
+Key benefits:
+
+`r emo::ji("white_check_mark")` makes all values positive
+
+`r emo::ji("white_check_mark")` penalizes large errors
+
+`r emo::ji("white_check_mark")` produces a **closed-form solution**
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+.center[
+<img src=`r here::here('slides','img','ols4_plot.png')` style="width:400px; display:block; margin:-40px auto -20px auto;">
+]  
+
+$\color{grey}{\text{OLS chooses the line that minimizes: }}\sum_{i=1}^{n}(\text{y}_i - \hat{\text{y}}_i)^2$
+
+---
+
+```{r, ols-animation, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, fig.width=8, fig.height=4.2, cache=TRUE, eval = F}
+
+library(ggplot2)
+library(animation)
+library(here)
+library(scales)
+library(ggtext)
+
+# ── Fixed data ────────────────────────────────────────────────────────────────
+set.seed(1234)
+n_groups    <- 5
+n_per_group <- 40
+
+group_x_means    <- c(15, 30, 45, 60, 65)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+# ── OLS solution ──────────────────────────────────────────────────────────────
+fit    <- lm(y ~ x, data = df)
+ols_b0 <- coef(fit)[1]
+ols_b1 <- coef(fit)[2]
+
+ssr <- function(b0, b1) sum((df$y - (b0 + b1 * df$x))^2)
+
+x_range <- range(df$x)
+
+# ── AXIS LIMITS: tight around data, then enforce 16:9 via coord_fixed ─────────
+#
+# The root cause of the whitespace problem:
+#   coord_fixed(1) forces 1 data-unit-x == 1 data-unit-y in PIXELS.
+#   Your X span (~100 units) >> Y span (~15 units), so to fill a 16:9 canvas
+#   with equal-unit axes, Y had to be blown out to ~56 units — almost 4× the
+#   actual data range, creating massive top/bottom whitespace.
+#
+# Fix: compute tight limits from the data, then set
+#   coord_fixed(ratio = x_span / y_span * 9/16)
+# This tells ggplot "one x-unit should appear (9/16)*(x_span/y_span) times
+# as tall as one y-unit" — which makes the plot fill the 16:9 canvas exactly
+# while keeping the squares visually square.
+
+x_pad <- diff(range(df$x)) * 0.06
+y_pad <- diff(range(df$y)) * 0.10   # slightly more vertical breathing room
+
+x_limits <- range(df$x) + c(-x_pad, x_pad)
+y_limits <- range(df$y) + c(-y_pad, y_pad)
+
+x_span <- diff(x_limits)
+y_span <- diff(y_limits)
+
+# coord_fixed ratio that makes the physical canvas exactly 16:9
+# and simultaneously renders residual squares as true squares
+fixed_ratio <- (x_span / y_span) * (9 / 16)
+
+# ── Keyframes ─────────────────────────────────────────────────────────────────
+kf <- data.frame(
+  b0 = c(ols_b0 - 6,  ols_b0 - 3,  ols_b0,
+         ols_b0 + 3,  ols_b0 + 5,  ols_b0 + 3,
+         ols_b0,      ols_b0 - 2,  ols_b0),
+  b1 = c(ols_b1 + 0.08, ols_b1 + 0.04, ols_b1,
+         ols_b1 - 0.03, ols_b1 - 0.07, ols_b1 - 0.03,
+         ols_b1,        ols_b1 + 0.02, ols_b1)
+)
+
+# ── Interpolation ─────────────────────────────────────────────────────────────
+n_interp <- 18
+
+params <- do.call(rbind, lapply(seq_len(nrow(kf) - 1), function(k) {
+  t_seq  <- seq(0, 1, length.out = n_interp + 1)[-(n_interp + 1)]
+  t_ease <- (1 - cos(t_seq * pi)) / 2
+  data.frame(
+    b0 = kf$b0[k] + (kf$b0[k+1] - kf$b0[k]) * t_ease,
+    b1 = kf$b1[k] + (kf$b1[k+1] - kf$b1[k]) * t_ease
+  )
+}))
+params <- rbind(params, kf[nrow(kf), ])
+
+# ── Subsample for squares ─────────────────────────────────────────────────────
+set.seed(99)
+sq_idx <- sample(nrow(df), 200)
+df_sq  <- df[sq_idx, ]
+
+make_squares <- function(b0, b1) {
+  do.call(rbind, lapply(seq_len(nrow(df_sq)), function(j) {
+    
+    x0    <- df_sq$x[j]
+    y0    <- df_sq$y[j]
+    yhat0 <- b0 + b1 * x0
+    
+    side     <- y0 - yhat0
+    side_abs <- abs(side)
+    x_dir    <- if (side >= 0) -1 else 1
+    
+    # To appear visually square in a non-unit-ratio coord system,
+    # the x-extent of the square must be scaled by fixed_ratio
+    x_side <- side_abs * fixed_ratio
+    
+    px <- c(x0,
+            x0 + x_dir * x_side,
+            x0 + x_dir * x_side,
+            x0,
+            x0)
+    
+    py <- c(yhat0,
+            yhat0,
+            y0,
+            y0,
+            yhat0)
+    
+    data.frame(px = px, py = py, pt_id = j)
+  }))
+}
+
+plot_frame <- function(b0, b1) {
+  
+  sq_df <- make_squares(b0, b1)
+  
+  df_line <- data.frame(
+    x = x_limits,
+    y = c(b0 + b1 * x_limits[1], b0 + b1 * x_limits[2])
+  )
+  
+  df_local <- df
+  df_local$yhat_temp <- b0 + b1 * df_local$x
+  
+  current_ssr <- ssr(b0, b1)
+  
+  label_text <- paste0(
+    "<b><i>b</i><sub>0</sub> = ", round(b0, 2),
+    "<br><i>b</i><sub>1</sub> = ", round(b1, 3),
+    "<br><br>SSR = ", comma(round(current_ssr, 0)), "</b>"
+  )
+  
+  label_x <- x_limits[2] - 0.03 * x_span
+  label_y <- y_limits[2] - 0.04 * y_span
+  
+  ggplot(df_local, aes(x, y)) +
+    
+    geom_polygon(
+      data = sq_df,
+      aes(x = px, y = py, group = pt_id),
+      fill      = "#8DC63F",
+      colour    = "#A7A9AC",
+      alpha     = 0.10,
+      linewidth = 0.2
+    ) +
+    
+    geom_segment(
+      aes(xend = x, yend = yhat_temp),
+      colour    = "#00B5AD",
+      linewidth = 0.7,
+      linetype  = "dashed"
+    ) +
+    
+    geom_line(
+      data = df_line,
+      aes(x = x, y = y),
+      colour    = "#4B4F54",
+      linewidth = 2.2
+    ) +
+    
+    geom_point(size = 6, alpha = 0.30, color = "#FF7F00") +
+    
+    annotate(
+      "richtext",
+      x     = label_x,
+      y     = label_y,
+      label = label_text,
+      hjust = 1,
+      vjust = 1,
+      size  = 7,
+      fill        = scales::alpha("white", 0.75),
+      label.color = NA,
+      label.padding = unit(0.4, "lines"),
+      label.r       = unit(0.15, "lines")
+    ) +
+    
+    scale_x_continuous(limits = x_limits, expand = c(0, 0)) +
+    scale_y_continuous(limits = y_limits, expand = c(0, 0)) +
+    
+    # Key fix: ratio = x_span/y_span * 9/16 fills the 16:9 canvas tightly
+    # while making the residual squares appear visually square
+    coord_fixed(ratio = fixed_ratio) +
+    
+    theme_classic(base_size = 38) +
+    theme(
+      axis.title      = element_text(face = "bold", size = 38),
+      axis.text       = element_blank(),
+      axis.ticks      = element_line(color = "black"),
+      plot.margin     = margin(t = 8, r = 10, b = 6, l = 6, unit = "pt"),
+      legend.position = "none"
+    ) +
+    labs(x = "Predictor (X)", y = "Outcome (Y)")
+}
+
+# ── Save GIF ──────────────────────────────────────────────────────────────────
+saveGIF({
+  
+  for (i in seq_len(nrow(params))) {
+    print(plot_frame(params$b0[i], params$b1[i]))
+  }
+  
+  for (j in 1:20) {
+    print(plot_frame(ols_b0, ols_b1))
+  }
+  
+},
+movie.name = here("slides", "img", "ols_squares_zoomed.gif"),
+interval   = 0.1,
+ani.width  = 1280,
+ani.height = 720
+)
+
+```
+
+.center[
+
+`r knitr::include_graphics(here::here("slides", "img", "ols_squares_zoomed.gif"))`
+
+]  
+
+<small>
+
+Geometrically:
+
+> OLS minimizes the **total area of the residual squares**.
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+```{r, ols-squared-residuals, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, fig.width=8, fig.height=4.2, cache=TRUE, eval = F}
+
+# Load libraries
+library(ggplot2)
+
+# Example: single data point
+Y_i <- 5
+X_i <- 2
+
+# Try different beta1 values (beta0 = 0 for simplicity)
+beta1 <- seq(-2, 4, length.out = 500)
+
+# Residuals
+residuals <- Y_i - (0 + beta1 * X_i)
+
+# Squared residuals
+squared_residuals <- residuals^2
+
+# Put into a data frame
+df <- data.frame(beta1 = beta1, squared_residuals = squared_residuals)
+
+# APA-style plot
+p6 <- ggplot(df, aes(x = beta1, y = squared_residuals)) +
+  geom_line(color = "#00B5AD", size = 1) +              # black line is more APA-friendly
+  geom_vline(xintercept = Y_i / X_i, 
+             color = "#EB7B35", linetype = "dashed", size = 0.8) +
+  labs(
+    #title = "Squared Residuals as a Function of the fixed slope",
+    x = expression(beta[1]),
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +                     # readable font
+  theme(
+    plot.title = element_text(hjust = 0, face = "bold"), # left-align and bold title
+    axis.title = element_text(face = "bold"),
+    axis.text = element_text(color = "black")
+  )
+
+ggsave(here::here('slides','img','ols_boxes_plot.png'), plot = p6, width = 4, height = 4, dpi = 300)
+
+# Seattle Children's official colors include:
+#Teal ("#00B5AD")
+#Bright Green ("#8DC63F")
+#Light Blue ("#00A9E0")
+#Warm Gray ("#A7A9AC")
+#Dark Gray ("#4B4F54")
+#orange ("#EB7B35")
+
+```
+
+.center[
+
+<img src=`r here::here('slides','img','ols_boxes_plot.png')` style="width:300px; display:block; margin:-40px auto -20px auto;">
+
+]  
+
+<small>
+
+The squared-error function forms a **smooth quadratic surface.**
+
+This means: `r emo::ji("white_check_mark")` there is **one optimal solution** `r emo::ji("white_check_mark")` we can solve it analytically
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+OLS therefore has a closed-form estimator.
+</span>**
+]
+]
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**But What Is OLS Really Doing?**
+
+<small>
+
+> When errors are normally distributed, the OLS estimates of the regression coefficients are identical to the maximum likelihood estimates - minimizing squared residuals and maximizing the normal likelihood are the same problem.
+
+To see why, we need to introduce **Maximum Likelihood (ML)**.
+
+</small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+<style="clear: both;">
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+Maximum Likelihood
+</span>**
+]
+]
+
+A **probability density function `r emo::ji("smirk")`** describes the distribution of the data.
+
+$$ 
+\color{grey}{\text{For a normal distribution: }}
+\large
+\text{L}_i = {\frac{1}{\sqrt{2 \pi \sigma^2}} \text{e}^{-.5\frac{(\color{#EB7B35}{\text{Y}_i - \mu})^2 }{\color{#EB7B35}{\sigma}^2} }} 
+$$
+
+$\text{L}_i$ measures the relative probability of observing $\text{Y}_i$ given a mean and variance.
+
+---
+
+.pull-right-60[
+
+```{r, out.width = "450px", out.height = "425px", echo = F, message=FALSE, warning=FALSE, dpi = 300}
+
+library(dplyr)
+library(ggplot2)
+library(smplot2)
+
+# Data for each row in the table
+ID <- 1:20
+x <- c(36.6, 41.8, 42.6, 43.1, 43.4, 44.2, 44.9, 46.3, 48.6, 49.0, 
+       50.0, 51.6, 54.6, 54.8, 55.7, 57.2, 57.6, 60.3, 60.9, 65.3)
+
+data1 <- data.frame(ID, x)
+
+# Data for each row in the table
+ID <- 1:20
+x <- c(36.6, 41.8, 42.6, 43.1, 43.4, 44.2, 44.9, 46.3, 48.6, 49.0, 
+       50.0, 51.6, 54.6, 54.8, 55.7, 57.2, 57.6, 60.3, 60.9, 65.3)
+y <- c(40.0, 40.0, 35.0, 43.0, 42.6, 39.0, 45.0, 45.2, 50.0, 40.0, 
+        NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+
+# Create the main data frame
+datam <- data.frame(ID, x, y)
+
+#--- fiml 
+
+mu <- mean(data1$x, na.rm=T)
+sigma <- sd(data1$x, na.rm=T)
+
+data1$Li <- round(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu)^2 / sigma^2) * -0.5), 6) 
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Find the largest value in the last column
+data1 <- data1 %>%
+  mutate(across(
+    .cols = ncol(data1),
+    .fns = ~ ifelse(. == max(., na.rm = TRUE), 
+                    paste0("<b style='font-size:16px;'>", ., "</b>"), 
+                    .)
+  ))
+
+# Rename the last column to "L_i" with a subscript
+colnames(data1)[ncol(data1)] <- "<div style='text-align: center;'>L<sub><i>i</i></sub></div>"
+
+# Create the table with kable and apply styling
+knitr::kable(
+  data1,
+  format = "html",
+  align = "ll",
+  escape = FALSE
+) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    font_size = 13.5, full_width = TRUE
+  ) %>%
+  kableExtra::row_spec(11, background = "#8DC63F", color = "white")
+
+```
+
+]
+
+.pull-left-40[
+
+**ML estimation**
+
+.small[
+
+Applying the density function gives the relative probability $\text{(}L_i\text{)}$ of each score from this normal distribution. 
+
+**Complete data:** 
+
+$$
+\text{x } (\mu = `r round(mu, 2)` \text{, } \sigma = `r round(sigma, 2)`)
+$$
+]
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+Largest $L_i$ is best!
+</span>**
+]
+]
+
+]
+
+---
+
+```{r, out.width = "600px", out.height = "600px", echo = F, message=FALSE, warning=FALSE, dpi = 300}
+
+# Load necessary library
+library(ggplot2)
+
+data1$likelihood <- 1 / sqrt(2 * pi * sigma^2) * exp(-0.5 * ((data1$x - mu)^2) / sigma^2)
+
+df <- data.frame(x = seq(25, 75, by = 0.5))
+df$likelihood <- 1 / sqrt(2 * pi * sigma^2) * exp(-0.5 * ((df$x - mu)^2) / sigma^2)
+
+# Define the x positions for vertical lines and find the closest mu values
+select_x1 <- 45
+select_x2 <- 62
+
+
+# Create the plot
+ggplot(df, aes(x = x, y = likelihood)) +
+  geom_line(color = "#00A9E0", size = 3.50) +
+  
+  scale_y_continuous(breaks = seq(0, max(df$likelihood)), limits = c(0, max(df$likelihood)+.01), expand = c(0, 0))+
+
+ # Left 
+  annotate("text", x = select_x1 - 7, y = df$likelihood[df$x == select_x1], 
+           label = paste0("italic(L)[", sprintf("%.0f", select_x1), "] == ", 
+                         sprintf("%.2f", df$likelihood[df$x == select_x1])),
+           parse = TRUE, color = "#4B4F54", size = 6) +
+  geom_segment(aes(x = select_x1, y = min(likelihood), 
+                   xend = select_x1, yend = df$likelihood[df$x == select_x1]), 
+               color = "#A7A9AC", linetype = "dashed", linewidth = 1) +
+  geom_point(aes(x = select_x1, y = df$likelihood[df$x == select_x1]), 
+             color = "#8DC63F", size = 6) +
+  
+  # Right
+  annotate("text", x = select_x2 + 7, y = df$likelihood[df$x == select_x2], 
+           label = paste0("italic(L)[", sprintf("%.0f", select_x2), "] == ", 
+                         sprintf("%.2f", df$likelihood[df$x == select_x2])),
+           parse = TRUE, color = "#4B4F54", size = 6) +
+  geom_segment(aes(x = select_x2, y = min(likelihood), 
+                   xend = select_x2, yend = df$likelihood[df$x == select_x2]), 
+               color = "#A7A9AC", linetype = "dashed", linewidth = 1) +
+  geom_point(aes(x = select_x2, y = df$likelihood[df$x == select_x2]), 
+             color = "#8DC63F", size = 6) +
+
+  labs(title = "", x = "Mean (x)", y = "Likelihood") +
+  theme(
+    plot.margin = unit(c(1, 1, 1, 1), "cm"),
+    panel.background = element_blank(),
+    plot.title = element_text(size = 22, face = "bold", hjust = 0.5, margin = margin(b = 15)),
+    axis.line = element_line(color = "black"),
+    axis.title = element_text(size = 22, color = "black", face = "bold"),
+    axis.text = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(margin = margin(t = 10)),
+    axis.text.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.title.x = element_text(size = 14, color = "black"),
+    axis.ticks.y = element_blank()
+  )
+
+```
+
+---
+
+.pull-right-40[
+
+```{r, out.width = "600px", out.height = "600px", echo = F, message=FALSE, warning=FALSE, dpi = 300}
+library(dplyr)
+library(ggplot2)
+library(smplot2)
+
+# Data for each row in the table
+ID <- 1:20
+x <- c(36.6, 41.8, 42.6, 43.1, 43.4, 44.2, 44.9, 46.3, 48.6, 49.0, 
+            50.0, 51.6, 54.6, 54.8, 55.7, 57.2, 57.6, 60.3, 60.9, 65.3)
+
+data1 <- data.frame(ID, x)
+
+# Data for each row in the table
+ID <- 1:20
+x <- c(36.6, 41.8, 42.6, 43.1, 43.4, 44.2, 44.9, 46.3, 48.6, 49.0, 
+            50.0, 51.6, 54.6, 54.8, 55.7, 57.2, 57.6, 60.3, 60.9, 65.3)
+y <- c(40.0, 40.0, 35.0, 43.0, 42.6, 39.0, 45.0, 45.2, 50.0, 40.0, 
+            NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+
+# Create the main data frame
+datam <- data.frame(ID, x, y)
+
+#--- fiml 
+
+mu <- mean(data1$x, na.rm=T)
+sigma <- sd(data1$x, na.rm=T)
+
+data1$Li <- round(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu)^2 / sigma^2) * -0.5), 6)
+data1$logLi <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu)^2 / sigma^2) * -0.5)), 6)
+
+options(scipen = 999)
+smallval <- prod(data1$Li)
+smallval <- as.character(smallval)
+options(scipen = 0)
+
+sumfit <- round(sum(data1$logLi),2)
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Find the largest value in the last column
+data1 <- data1 %>%
+  mutate(across(
+    .cols = ncol(data1),
+    .fns = ~ ifelse(. == max(., na.rm = TRUE), 
+                    paste0("<b style='font-size:16px;'>", ., "</b>"), 
+                    .)
+  ))
+
+# Rename the last column to "L_i" with a subscript
+colnames(data1)[ncol(data1)-1] <- "<div style='text-align: center;'>L<sub><i>i</i></sub></div>"
+colnames(data1)[ncol(data1)] <- "<div style='text-align: center;'>logL<sub><i>i</i></sub></div>"
+
+
+# Create the table with kable and apply styling
+knitr::kable(
+  data1,
+  format = "html",
+  align = "ll",
+  escape = FALSE
+) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    font_size = 13.5, full_width = TRUE
+  )  %>%
+  kableExtra::row_spec(11, background = "#8DC63F", color = "white")
+
+```
+
+]
+
+.pull-left-40[
+
+**Maximum Likelihood**
+
+.small[
+Multiple each $(L_i)$ to get sample likelihood.
+
+<small><small><small>`r smallval`</small></small></small> 
+<small><small>Fit of this data to $\mu$ = `r sprintf("%.2f", mu)`, $\sigma$ = `r sprintf("%.2f", sigma)`</small></small> 
+
+<small>**To avoid small numbers, we take the log of the likelihood.**</small>  
+
+Add each $logL_i$ to get sample loglikelihood.
+
+`r sumfit`
+
+**Model Fit Indices use this!**
+
+$\small \text{AIC} = -2 \times logL+2k$
+$\small \text{ BIC} = -2 \times logL+k \times logN$
+
+]
+
+]
+
+---
+
+.pull-left-60[
+
+```{r, out.width = "600px", out.height = "600px", echo = F, message=FALSE, warning=FALSE, dpi = 300}
+library(dplyr)
+library(ggplot2)
+library(smplot2)
+
+# Data for each row in the table
+ID <- 1:20
+x <- c(36.6, 41.8, 42.6, 43.1, 43.4, 44.2, 44.9, 46.3, 48.6, 49.0, 
+            50.0, 51.6, 54.6, 54.8, 55.7, 57.2, 57.6, 60.3, 60.9, 65.3)
+
+data1 <- data.frame(ID, x)
+
+#--- fiml 
+
+mu1 <- 30
+mu2 <- 40
+mu3 <- 50
+mu4 <- 60
+mu5 <- 70
+
+sigma <- sd(data1$x, na.rm=T)
+
+data1$logLi1 <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu1)^2 / sigma^2) * -0.5)), 3)
+data1$logLi2 <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu2)^2 / sigma^2) * -0.5)), 3)
+data1$logLi3 <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu3)^2 / sigma^2) * -0.5)), 3)
+data1$logLi4 <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu4)^2 / sigma^2) * -0.5)), 3)
+data1$logLi5 <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu5)^2 / sigma^2) * -0.5)), 3)
+
+#data1$logLi <- round(log(1 / sqrt(2 * pi * sigma^2) * exp(((data1$x - mu)^2 / sigma^2) * -0.5)), 6)
+
+sumfit1 <- round(sum(data1$logLi1), 2)
+sumfit2 <- round(sum(data1$logLi2), 2)
+sumfit3 <- round(sum(data1$logLi3), 2)
+sumfit4 <- round(sum(data1$logLi4), 2)
+sumfit5 <- round(sum(data1$logLi5), 2)
+
+new_row <- c("", "", "", "", "", "", "")
+
+data1 <- rbind(data1, new_row)
+
+new_row <- c("", "", sumfit1, sumfit2, sumfit3, sumfit4, sumfit5)
+
+data1 <- rbind(data1, new_row)
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Rename the last column to "L_i" with a subscript
+colnames(data1)[ncol(data1)-4] <- paste0("\u03BC = ", mu1)
+colnames(data1)[ncol(data1)-3] <- paste0("\u03BC = ", mu2)
+colnames(data1)[ncol(data1)-2] <- paste0("\u03BC = ", mu3)
+colnames(data1)[ncol(data1)-1] <- paste0("\u03BC = ", mu4)
+colnames(data1)[ncol(data1)] <- paste0("\u03BC = ", mu5)
+
+# Bold the entire last row
+data1 <- data1 %>%
+  mutate(across(
+    everything(),  # Apply to all columns
+    .fns = ~ ifelse(row_number() == n(), 
+                    paste0("<b style='font-size:12px;'>", ., "</b>"), 
+                    .)
+  ))
+
+# Create the table with kable and apply styling
+knitr::kable(
+  data1,
+  format = "html",
+  align = "ll",
+  escape = FALSE
+) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), 
+    font_size = 11, full_width = TRUE
+  ) %>% 
+  kableExtra::column_spec(5, background = ifelse(seq_len(nrow(data1)) == nrow(data1), "#8DC63F", "transparent"),
+                             color = ifelse(seq_len(nrow(data1)) == nrow(data1), "white", "black"))
+
+```
+
+]
+
+.pull-right-40[
+
+<small>
+
+**ML estimation as an audition process**
+
+<small><small>
+
+> We calculate the log-likelihood for every observation under each candidate μ, then sum them up. The total at the bottom of each column is that candidate's total log-likelihood score - **its audition result**.
+
+- Here, the highest log-likelihood (least negative) wins!
+
+</small></small>
+
+</small>
+
+]
+
+---
+
+```{r olsml, message = FALSE, warning = FALSE, eval=FALSE}
+
+library(ggplot2)
+library(patchwork)
+library(animation)
+library(dplyr)
+library(here)
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+beta  <- seq(-3, 3, length.out = 400)
+df1   <- data.frame(beta, S    = (beta - 0.5)^2 + 1)
+df2   <- data.frame(beta, logL = -(beta - 0.5)^2 + 3)
+
+# Frames: positions of the travelling tangent point
+frames <- seq(-2.5, 2.5, length.out = 80)
+
+# Build a params table — one row per animation frame
+params <- data.frame(beta0 = frames) %>%
+  mutate(
+    S0    = (beta0 - 0.5)^2 + 1,
+    L0    = -(beta0 - 0.5)^2 + 3,
+    slope_ols = 2  * (beta0 - 0.5),
+    slope_ml  = -2 * (beta0 - 0.5)
+  )
+
+# ── Frame-drawing function ────────────────────────────────────────────────────
+plot_frame <- function(b0, S0, L0, slope_ols, slope_ml) {
+  
+  # Tangent line data for this frame
+  tang_ols <- data.frame(
+    beta    = beta,
+    tangent = S0 + slope_ols * (beta - b0)
+  )
+  tang_ml <- data.frame(
+    beta    = beta,
+    tangent = L0 + slope_ml  * (beta - b0)
+  )
+  
+  # ── OLS panel ──
+  p1 <- ggplot() +
+    geom_line(data = df1,      aes(beta, S),       linewidth = 2, color = "#2C6BAA") +
+    geom_line(data = tang_ols, aes(beta, tangent),  linewidth = 1.5,   color = "orange") +
+    geom_point(aes(x = b0, y = S0), color = "red", size = 6) +
+    coord_cartesian(ylim = c(0, 12)) +
+    labs(
+      title = "OLS: Searching for slope = 0",
+      y     = expression(S(beta)),
+      x     = expression(beta)
+    ) +
+    theme_minimal(base_size = 22)
+  
+  # ── ML panel ──
+  p2 <- ggplot() +
+    geom_line(data = df2,     aes(beta, logL),    linewidth = 2, color = "#2E9F65") +
+    geom_line(data = tang_ml, aes(beta, tangent), linewidth = 1.5,   color = "orange") +
+    geom_point(aes(x = b0, y = L0), color = "red", size = 6) +
+    coord_cartesian(ylim = c(-7, 4)) +
+    labs(
+      title = "ML: Searching for slope = 0",
+      y     = expression(log(L)(beta)),
+      x     = expression(beta)
+    ) +
+    theme_minimal(base_size = 22)
+  
+  # ── Combined ──
+  combined <- (p1 | p2) +
+    plot_annotation(
+      title    = "OLS and ML Find the Point Where the Derivative = 0"#,
+     # subtitle = expression(epsilon %~% N(0, sigma^2))
+    )
+  
+  print(combined)
+}
+
+# ── Save GIF ──────────────────────────────────────────────────────────────────
+# 1280 × 720 = standard 720p, matches PowerPoint 16:9 slide (13.33" × 7.5" at 96 dpi)
+
+output_path <- here("slides","img","ols_ml_derivative.gif")
+
+saveGIF(
+  {
+    # Animate: tangent sweeps across the curve
+    for (i in seq_len(nrow(params))) {
+      plot_frame(
+        b0        = params$beta0[i],
+        S0        = params$S0[i],
+        L0        = params$L0[i],
+        slope_ols = params$slope_ols[i],
+        slope_ml  = params$slope_ml[i]
+      )
+    }
+    
+    # Hold on final (optimal) frame for ~2 seconds
+    opt <- params[which.min(abs(params$beta0 - 0.5)), ]
+    for (j in 1:20) {
+      plot_frame(
+        b0        = opt$beta0,
+        S0        = opt$S0,
+        L0        = opt$L0,
+        slope_ols = opt$slope_ols,
+        slope_ml  = opt$slope_ml
+      )
+    }
+  },
+  movie.name = output_path,
+  interval   = 0.1,
+  ani.width  = 1280,   # 16:9 at 720p — fits a full PowerPoint slide
+  ani.height = 720
+)
+
+# message("GIF saved to: ", output_path)
+
+```
+
+.center[
+
+`r knitr::include_graphics(here::here("slides", "img", "ols_ml_derivative.gif"))`
+
+]  
+
+<small><small>
+
+> SSR is embedded inside the log-likelihood given errors are normal and independent with constant variance, so both methods locate the same optimal $\beta$.
+
+</small></small>
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**Why Move Beyond OLS?**
+  
+OLS works only for:
+
+- Normal outcomes
+
+- One outcome at a time
+
+- Independent observations
+
+- Listwise deletion with missing data
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**Maximum likelihood allows us to estimate:**
+
+`r emo::ji("white_check_mark")` multilevel models
+
+`r emo::ji("white_check_mark")` generalized models (binary, count, etc.)
+
+`r emo::ji("white_check_mark")` models with missing data (FIML)
+
+`r emo::ji("white_check_mark")` multiple outcomes simultaneously
+
+> ML is the general estimation framework for modern statistical models. We will use it!
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**ML in Multilevel Models**
+
+Multilevel models estimate:
+
+- Fixed effects
+
+- Random effects
+
+- Variance components
+
+These parameters are estimated using **ML** or **REML**.
+
+---
+
+## `r emo::ji("bullseye")` Estimation in Statistical Models
+
+**ML vs. Restricted/Residual ML (REML)**
+
+<small><small>
+  
+| Method | Use Case | Pros / Notes |
+|--------|----------|--------------|
+| **ML** | Comparing models with **different fixed effects** | Random effects estimates may be slightly biased downward |
+| **REML** | Comparing models with the **same fixed effects**, or interpreting random effects | Provides unbiased estimates of random effects var/covar<br><br> Cannot compare models with different fixed effects |
+
+`r emo::ji("white_check_mark")` Changing fixed effects? - Use ML to compare
+
+`r emo::ji("white_check_mark")` Changing random effects only? - Use REML to compare
+
+`r emo::ji("white_check_mark")` Final model for reporting? - Refit with REML for unbiased variance estimates.
+
+</small></small>
+
+---
+
+## How to handle nested data?
+
+---
+
+## How to handle nested data?
+
+Methods fall into three general categories based on how they handle nestedness.
+
+--
+
+- `r ji('warning')` **Ignore:** disaggregation, aggregation   
+
+- `r ji('confused')` **Control:** ANCOVA, separate regressions, adjusting the results, fixed effects approach 
+
+- `r ji('mag')` **Model:** *Modeling* nestedness     
+
+--
+
+> In fact, methods have shifted from *controlling clustering* (attempting to remove its influence) to **modeling it as something worth studying**! `r ji('raised_hands')`
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+> Disaggregation means .highlight[**<span style="color:#FFFFFF;">moving variables to a lower level</span>**] as if there is no clustering <small>(see [Hox, J., Moerbeek, M., & Van de Schoot, R., 2017](https://biostats.bepress.com/cgi/viewcontent.cgi?article=1001&context=bioconductor)).</small>
+
+- **The risk:** Inflated sample size and underestimated standard errors (false positives).
+
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+```{r disaggregation, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# group means
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = max(sub$x) + 1,
+    y     = mean(sub$y),
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+
+
+# HTML formula using ggtext richtext
+formula_label <- "<span style='font-size:18pt'><i>y<sub>i</sub></i> = <i>β<sub>0</sub></i> + <i>β<sub>1</sub></i><i>x<sub>i</sub></i> + <i>e<sub>i</sub></i></span>"
+
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # raw points, faded
+  geom_point(size = 5, alpha = 0.15) +
+  
+  # within-group regression lines
+  #geom_smooth(method = "lm", se = FALSE,
+  #            linewidth = 1.2, linetype = "solid") +
+  
+  # pooled OLS through all raw points
+  geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+              color = "#222222", linewidth = 1.8) +
+  
+  # group mean points
+  #geom_point(data = group_means,
+  #           aes(x = x, y = y, color = group),
+  #           size = 8, alpha = 1, shape = 18) +
+  
+  # regression line through group means (aggregated)
+  #geom_smooth(data = group_means,
+  #            aes(x = x, y = y, group = 1),
+  #            method = "lm", se = FALSE,
+  #            color = "#2166AC", linewidth = 2, linetype = "dashed") +
+  
+  #geom_text(
+  #  data     = label_df,
+  #  aes(x = x, y = y, label = label, color = group),
+  #  hjust    = 0,
+  #  fontface = "bold",
+  #  size     = 6,
+  #  show.legend = FALSE
+  #) +
+  
+  # richtext annotation for the formula
+  annotate(
+    "richtext",
+    x         = min(df$x),
+    y         = max(df$y),
+    label     = formula_label,
+    hjust     = -0.10,
+    vjust     = 1,
+    fill      = NA,       # no box background
+    label.color = NA      # no box border
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+
+  scale_x_continuous(
+    breaks = seq(
+      floor(min(df$x)),
+      ceiling(max(df$x)+5),
+      by = 10                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.01, 0.10))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df$y)),
+      ceiling(max(df$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.20))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','disaggregation_plot.png'), plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','disaggregation_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+- Level-1 units are the unit of analysis.
+- Level-1 and level-2 predictors are included as if they were ordinary independent variables.
+
+</small>
+
+--- 
+
+## `r emo::ji("flushed")` Not recommended
+
+<small>
+
+> .highlight[**<span style="color:#FFFFFF;">Violates the independence assumption</span>**] which can lead to standard errors that are severely biased (usually underestimated).   
+
+- **Result:** Inflated Type I error rates and overconfident conclusions.
+
+> .highlight[**<span style="color:#FFFFFF;">Neglects between-cluster variation</span>**], effectively treating all clusters as identical and failing to model the unique intercepts or slopes associated with each group.
+
+- **Result:** Lost insights into group-level effects and potentially misleading fixed effects estimates.
+
+</small>
+
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+.center[
+
+.pull-left-40[
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+})) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 1)))
+
+df %>%
+  arrange(group) %>%
+  group_by(group) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>%
+  kable() %>%
+  kableExtra::kable_styling(font_size = 14)
+
+```
+
+]
+
+.pull-right-60[
+
+.left[
+
+<small>
+
+**Example (Nested/Grouped Data)**
+
+- **x** = predictor, **y** = outcome
+
+- **5 groups**, showing first 3 rows 
+
+- 80 individuals per group (*N* = 400)
+
+- **Think:** students in classrooms, patients in hospitals, repeated measures per person
+
+$$\text{y}_i = \beta_0 + \beta_1 \text{x}_i + \text{e}_i$$
+
+</small>
+
+] ]
+
+]
+
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+<small><small>
+
+**R code:**
+
+<pre style="font-size:0.8em;">
+pooled_lm <- lm(y ~ x, data = df)
+summary(pooled_lm)
+</pre>
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(dplyr)
+library(broom)
+library(knitr)
+library(glue)
+
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+# ---------------------------
+# 1. Center predictor
+# ---------------------------
+# grand-mean
+df <- df %>%
+  mutate(x_c = x - mean(x))
+
+# group-mean
+#df <- df %>%
+#  group_by(group) %>%
+#  mutate(x_gc = x - mean(x, na.rm = TRUE)) %>%
+#  ungroup()
+
+# ---------------------------
+# 2. Pooled OLS with centered predictor
+# ---------------------------
+pooled_lm <- lm(y ~ x_c, data = df)
+
+# ---------------------------
+# 3. Standardized beta (manual)
+# ---------------------------
+x_sd <- sd(df$x_c)
+y_sd <- sd(df$y)
+beta_std <- round(coef(pooled_lm)["x_c"] * (x_sd / y_sd), 3)
+
+# ---------------------------
+# 4. Effect size f²
+# ---------------------------
+r2 <- summary(pooled_lm)$r.squared
+f2 <- r2 / (1 - r2)
+
+# Convert f2 to r for interpretation
+r_eff <- r2 #sqrt(f2 / (1 + f2))
+
+# R2 Cohen
+effect_desc <- case_when(
+  r_eff < 0.02              ~ "negligible",
+  r_eff >= 0.02 & r_eff < 0.13 ~ "small",
+  r_eff >= 0.13 & r_eff < 0.26 ~ "medium",
+  r_eff >= 0.26             ~ "large"
+)
+
+# ---------------------------
+# 5. Tidy table for slide
+# ---------------------------
+pooled_table <- tidy(pooled_lm) %>%
+  dplyr::select(term, estimate, std.error, statistic, p.value) %>%
+  mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value = round(p.value, 3)
+  )
+
+kable(pooled_table, caption = "Pooled OLS Regression with Centered Predictor")
+
+# ---------------------------
+# 6. Automated APA-style interpretation
+# ---------------------------
+intercept <- pooled_table$estimate[pooled_table$term == "(Intercept)"]
+slope     <- pooled_table$estimate[pooled_table$term == "x_c"]
+t_slope   <- pooled_table$statistic[pooled_table$term == "x_c"]
+p_slope   <- pooled_table$p.value[pooled_table$term == "x_c"]
+
+#In a linear regression predicting Y from X (mean-centered), the intercept was **`r intercept`**, representing the expected *Y* at the mean of *X*. The slope for *X* was **`r slope`**, which was `r {ifelse(p_slope < 0.05, 'statistically significant', 'not statistically significant')}`, *t*(`r pooled_lm$df.residual`) = `r t_slope`, *p* = `r p_slope`, with a standardized beta of `r beta_std` and an effect size $R^2$ = `r round(r2,3)`, indicating a `r effect_desc` proportion of variance in *Y* explained by *X*. .highlight[**<span style="color:#FFFFFF;">This analysis assumes that groups have no influence; the more group membership actually affects Y, the more misleading this result becomes</span>**].
+
+```
+
+> In a linear regression predicting Y from X (mean-centered), the intercept was **`r intercept`**, representing the expected *Y* at the mean of *X*. The slope for *X* was **`r slope`**, which was `r {ifelse(p_slope < 0.05, 'statistically significant', 'not statistically significant')}`, *t*(`r pooled_lm$df.residual`) = `r t_slope`, *p* = `r p_slope`. .highlight[**<span style="color:#FFFFFF;">This analysis assumes that groups have no influence; the more group membership actually affects Y, the more misleading this result becomes</span>**].
+
+</small></small>
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+n_groups    <- 5
+n_per_group <- 80
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = max(sub$x) + 1,
+    y     = mean(sub$y),
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+
+g1 <- df[df$group == 1, ]
+g5 <- df[df$group == 5, ]
+
+formula_label <- "<span style='font-size:18pt'><i>y<sub>i</sub></i> = 6.391 + 0.001<i>x<sub>i</sub></i> + <i>e<sub>i</sub></i></span>"
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # green circle around each Group 1 point
+  geom_point(
+    data        = g1,
+    aes(x = x, y = y),
+    inherit.aes = FALSE,
+    shape       = 21,
+    size        = 5,
+    color       = "green3",
+    fill        = NA,
+    stroke      = 1.2
+  ) +
+  
+  # green circle around each Group 1 point
+  geom_point(
+    data        = g5,
+    aes(x = x, y = y),
+    inherit.aes = FALSE,
+    shape       = 21,
+    size        = 5,
+    color       = "red",
+    fill        = NA,
+    stroke      = 1.2
+  ) +  
+  
+  geom_point(size = 5, alpha = 0.10) +
+  
+  geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+              color = "#222222", linewidth = 1.8) +
+  
+  annotate(
+    "richtext",
+    x         = min(df$x),
+    y         = max(df$y),
+    label     = formula_label,
+    hjust     = -0.10,
+    vjust     = 1,
+    fill      = NA,
+    label.color = NA
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+  scale_x_continuous(
+    breaks = seq(floor(min(df$x)), ceiling(max(df$x) + 5), by = 10),
+    expand = expansion(mult = c(0.01, 0.10))
+  ) +
+  scale_y_continuous(
+    breaks = seq(floor(min(df$y)), ceiling(max(df$y) + 5), by = 5),
+    expand = expansion(mult = c(0.05, 0.20))
+  ) +
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','grouped_residual_plot.png'), plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','grouped_residual_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+**Knowing the group matters!**
+
+- `r emo::ji("warning")` $\text{e}_i$ = individual + group variation
+ 
+
+</small>
+
+---
+
+## `r emo::ji("see_no_evil")` `r emo::ji("hear_no_evil")` `r emo::ji("speak_no_evil")` What is disaggregation?
+
+.center[
+
+.pull-left-40[
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(htmltools)   # <-- needed for HTML()
+
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+})) 
+
+# ---------------------------
+# 1. Center predictor
+# ---------------------------
+# grand-mean
+df <- df %>%
+  mutate(x_c = x - mean(x))
+
+x_var_total <- sum((df$x_c)^2)
+
+# ---------------------------
+# 2. Pooled OLS with centered predictor
+# ---------------------------
+pooled_lm <- lm(y ~ x_c, data = df)
+
+# Add predicted values and residuals
+#df$y_hat <- predict(pooled_lm)
+df$resid <- resid(pooled_lm)
+
+sigma2_pooled <- var(df$resid)  # residual variance
+se_naive      <- sqrt(sigma2_pooled / x_var_total)
+
+library(lme4)
+library(performance)  # for icc()
+
+# 1. Random intercept model (empty predictor)
+mlm <- lmer(y ~ 1 + (1 | group), data = df)
+
+# Get ICC in one line
+icc <- as.numeric(performance::icc(mlm)[1])
+
+# Adjust for intra-group correlation
+rho <- icc         # estimated ICC
+n_j <- n_per_group # points per group
+se_corrected <- sqrt(sigma2_pooled * (1 + (n_j - 1) * rho) / x_var_total)
+
+df <- df %>%
+  dplyr::select(-x_c) %>%
+  # Round all numeric columns to 1 decimal place
+  mutate(across(where(is.numeric), ~ round(.x, 1)))
+
+# Show first 3 cases per group
+df %>%
+  arrange(group) %>%
+  group_by(group) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>%
+  mutate(
+    resid = cell_spec(
+      resid,
+      format = "html",                                          
+      background = ifelse(resid < 0, "#EB7B35", "#8DC63F"),
+      color = "white"
+    )
+  ) %>%
+  kable(format = "html", escape = FALSE) %>%                   
+  kable_styling(font_size = 14)
+
+# Seattle Children's official colors include:
+#Teal ("#00B5AD")
+#Bright Green ("#8DC63F")
+#Light Blue ("#00A9E0")
+#Warm Gray ("#A7A9AC")
+#Dark Gray ("#4B4F54")
+#orange ("#EB7B35")
+
+```
+
+]
+
+.pull-left-60[
+
+.left[
+
+<small>
+
+**Where the bias shows up:**
+
+<small>
+
+The model **<span style="color:#8DC63F;">overpredicts</span>** some groups and **<span style="color:#EB7B35;">underpredicts</span>** others.
+
+> Residual variance is inflated but the **SE of the slope is too low** because OLS treats all `r n_per_group*n_groups` points as independent. Accounting for strong within-group correlation shrinks the effective sample size from `r n_per_group*n_groups` to `r round((n_per_group*n_groups/(1+((n_per_group-1)*icc))),0)`! `r emo::ji("astonished")` 
+
+$$
+\small
+\text{SE}(\hat{\beta}) = \sqrt{\frac{\sigma^2 \times \color{#A7A9AC}{\text{VIF}}}{\sum_{i=1}^{n} (x_i - \bar{x})^2}} \text{, where} \color{#A7A9AC}{\text{VIF}} = 1 + (n_j - 1)\rho 
+$$
+Our estimated SE was **`r round(se_naive,3)`**, but adjusting for groups it should be **`r round(se_corrected,2)`**. 
+
+</small></small>
+
+] ]
+
+]
+
+---
+
+## `r emo::ji("link")` What is aggregation?
+
+---
+
+## `r emo::ji("link")` What is aggregation?
+
+```{r aggregation, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# group means
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = mean(sub$x) + 2.5,
+    y     = mean(sub$y)+ 1.25,
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+
+
+label_df$y[label_df$label == "Group 3"] <- 
+  label_df$y[label_df$label == "Group 3"] + 0.50
+
+label_df$y[label_df$label == "Group 1"] <- 
+  label_df$y[label_df$label == "Group 1"] + 1
+
+label_df$x[label_df$label == "Group 1"] <- 
+  label_df$x[label_df$label == "Group 1"] - 1
+
+# HTML formula using ggtext richtext
+formula_label <- "<span style='font-size:18pt'><i>y<sub>j</sub></i> = <i>β<sub>0</sub></i> + <i>β<sub>1</sub></i><i>x<sub>j</sub></i> + <i>e<sub>j</sub></i></span>"
+
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # regression line through group means (aggregated)
+  geom_smooth(data = group_means,
+              aes(x = x, y = y, group = 1),
+              method = "lm", se = FALSE,
+              color = "black", linewidth = 2, linetype = "solid") +
+  
+  # raw points, faded
+  geom_point(size = 5, alpha = 0.03) +
+  
+  # within-group regression lines
+  #geom_smooth(method = "lm", se = FALSE,
+  #            linewidth = 1.2, linetype = "solid") +
+  
+  # pooled OLS through all raw points
+  #geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+  #            color = "#222222", linewidth = 1.8) +
+  
+  # group mean points
+  geom_point(data = group_means,
+             aes(x = x, y = y, color = group),
+             size = 8, alpha = 1, shape = 19) +
+  
+  geom_text(
+    data     = label_df,
+    aes(x = x, y = y, label = label, color = group),
+    hjust    = 0,
+    fontface = "bold",
+    size     = 6,
+    show.legend = FALSE
+  ) +
+  
+  # richtext annotation for the formula
+  annotate(
+    "richtext",
+    x         = min(df$x),
+    y         = max(df$y),
+    label     = formula_label,
+    hjust     = -0.25,
+    vjust     = 1,
+    fill      = NA,       # no box background
+    label.color = NA      # no box border
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+
+  scale_x_continuous(
+    breaks = seq(
+      floor(min(df$x)),
+      ceiling(max(df$x)+5),
+      by = 10                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.01, 0.20))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df$y)),
+      ceiling(max(df$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.20))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','aggregation_plot.png'), plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','aggregation_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+- Level-2 units are the unit of analysis.
+- **Massive loss of information!** `r emo::ji("astonished")`    
+- The results cannot be generalized to level-1 (*ecological fallacy*).
+
+</small>
+
+---
+
+## `r emo::ji("link")` What is aggregation?
+
+<small><small>
+
+**R code:**
+
+<pre style="font-size:0.8em;">
+agg_lm <- lm(y_mean ~ x_mean, data = group_means)
+</pre>
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(dplyr)
+library(broom)
+library(knitr)
+library(glue)
+
+# ---------------------------
+# 1. Center predictor
+# ---------------------------
+df <- df %>%
+  mutate(x_c = x - mean(x))
+
+# ---------------------------
+# 5. Aggregated regression (regression through group means)
+# ---------------------------
+group_means <- df %>%
+  group_by(group) %>%
+  summarise(x_mean = mean(x_c), y_mean = mean(y), .groups = "drop")
+
+agg_lm <- lm(y_mean ~ x_mean, data = group_means)
+
+# ---------------------------
+# 5. Tidy table for slide
+# ---------------------------
+agg_table <- tidy(agg_lm) %>%
+  dplyr::select(term, estimate, std.error, statistic, p.value) %>%
+  mutate(
+    estimate = round(estimate, 3),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 2),
+    p.value = round(p.value, 3)
+  )
+
+kable(agg_table, caption = "Aggregated Regression (Group Means)")
+
+# ---------------------------
+# 6. Automated APA-style interpretation
+# ---------------------------
+intercept <- agg_table$estimate[agg_table$term == "(Intercept)"]
+slope     <- agg_table$estimate[agg_table$term == "x_mean"]
+t_slope   <- agg_table$statistic[agg_table$term == "x_mean"]
+p_slope   <- agg_table$p.value[agg_table$term == "x_mean"]
+
+# ---------------------------
+# 5. Standardized beta and effect size
+# ---------------------------
+x_sd <- sd(group_means$x_mean)
+y_sd <- sd(group_means$y_mean)
+beta_std <- round(slope * (x_sd / y_sd), 3)
+
+# f² effect size
+r2 <- summary(agg_lm)$r.squared
+f2 <- r2 / (1 - r2)
+
+# Convert f² -> r and dynamic description
+r_eff <- r2 #sqrt(f2 / (1 + f2))
+effect_desc <- case_when(
+  r_eff < 0.02              ~ "negligible",
+  r_eff >= 0.02 & r_eff < 0.13 ~ "small",
+  r_eff >= 0.13 & r_eff < 0.26 ~ "medium",
+  r_eff >= 0.26             ~ "large"
+)
+
+# ---------------------------
+# 6. Automated APA-style interpretation
+# ---------------------------
+
+```
+
+> In a linear regression predicting **group-mean Y** from the **group-mean X** (both grand mean-centered). The slope for *X* was **`r round(slope,1)`**, which was `r {ifelse(p_slope < 0.05, 'statistically significant', 'not statistically significant')}`, *t*(`r agg_lm$df.residual`) = `r t_slope`, *p* = `r p_slope`, with a `r effect_desc` effect size of $\text{R}^2$ = `r round(r2,2)`. .highlight[**<span style="color:#FFFFFF;">This analysis is at the group level, and cannot be assumed to apply to individuals within those groups</span>**].
+
+</small></small>
+
+---
+
+## `r emo::ji("hammer_and_wrench")` The fixed effects approach?
+
+---
+
+## `r emo::ji("hammer_and_wrench")` The fixed effects approach?
+
+**Include group as a fixed effect via dummy coding.**
+
+<small>
+
+- Separate intercept for each group
+
+- Slopes equal (unless interactions added)
+
+- Many parameters (50 groups = 49 dummy codes) `r emo::ji("worried")`
+
+<small>
+
+> **Imagine 5 specific hospitals** (Seattle Children's, CHOP, and so on) and we chose these hospitals deliberately because we want to study *these* hospitals specifically. Our estimates tell us how much each hospital's intercept differs from **the reference hospital**, and .highlight[**<span style="color:#FFFFFF;">we never intend to say anything beyond these 5 hospitals anyway</span>**]. Because slopes are fixed (parallel lines), the effect of *X* represents the common within-hospital relationship across all hospitals.
+
+</small></small> 
+
+---
+
+## `r emo::ji("hammer_and_wrench")` The fixed effects approach?
+
+<small><small>
+
+**R code:**
+
+<pre style="font-size:0.8em;">
+fixed_lm <- lm(y ~ x + factor(group), data = df)
+</pre>
+
+```{r fixedeff, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# --- fixed effect: fit model with common slope --------
+fixed_lm <- lm(y ~ x + factor(group), data = df)
+#summary(fixed_fit)
+
+# ---------------------------
+# 5. Tidy table for slide
+# ---------------------------
+fixed_table <- tidy(fixed_lm) %>%
+  dplyr::select(term, estimate, std.error, statistic, p.value) %>%
+  mutate(
+    estimate = round(estimate, 1),
+    std.error = round(std.error, 3),
+    statistic = round(statistic, 1),
+    p.value = round(p.value, 3)
+  )
+
+kable(fixed_table, caption = "Fixed-effects Regression (dummy codes)")
+
+
+```
+
+This approach absorbs between-group variation and focuses on within-group associations, producing more realistic SEs than naive pooled OLS.
+
+</small></small>
+
+---
+
+## `r emo::ji("hammer_and_wrench")` The fixed effects approach?
+
+**`r emo::ji("one")` No bias from omitted group effects**
+
+<small>
+
+- The over/under-prediction problem from pooled OLS goes away because each group gets its own intercept.
+
+</small>
+
+**`r emo::ji("two")` No design-effect inflation from clustering**
+
+<small>
+
+- The ICC is controlled by the group terms 
+
+</small>
+
+**`r emo::ji("three")` Effective sample size is `r n_per_group*n_groups - (n_groups-1)` after adjustment.** 
+
+<small>
+
+.center[
+
+*Assumes fixed slopes unless you add interactions.* 
+
+]
+
+</small>
+
+---
+
+## `r emo::ji("bar_chart")` ANCOVA approach?
+
+---
+
+## `r emo::ji("bar_chart")` ANCOVA approach?
+
+```{r ancova, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# group means
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+
+# ── ANCOVA: fit model with common slope ──────────────────────────────────────
+ancova_fit <- lm(y ~ x + group, data = df)   # parallel slopes model
+common_slope <- coef(ancova_fit)["x"]
+
+# Build predicted line segments for each group over its x-range
+line_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  x_seq <- seq(min(sub$x), max(sub$x), length.out = 100)
+  # predict with group factor set to g
+  nd <- data.frame(x = x_seq, group = factor(g, levels = 1:n_groups))
+  data.frame(group = factor(g), x = x_seq, y = predict(ancova_fit, newdata = nd))
+}))
+
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = max(sub$x) + 1.5,
+    y     = max(sub$y) - 3,
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+label_df$y[label_df$label == "Group 4"] <- label_df$y[label_df$label == "Group 4"] + 1
+label_df$y[label_df$label == "Group 2"] <- label_df$y[label_df$label == "Group 2"] + 0.50
+label_df$y[label_df$label == "Group 5"] <- label_df$y[label_df$label == "Group 5"] + 2
+
+# HTML formula – ANCOVA version
+formula_label <- "<span style='font-size:18pt'><i>y<sub>ij</sub></i> = <i>β<sub>0j</sub></i> + <i>β<sub>1</sub></i><i>x<sub>ij</sub></i> + <i>e<sub>ij</sub></i></span>"
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # pooled OLS through all raw points
+  #geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+  #            color = "#D9D9D9", linewidth = 1.8) +
+  
+  # regression line through group means
+  #geom_smooth(data = group_means,
+  #            aes(x = x, y = y, group = 1),
+  #            method = "lm", se = FALSE,
+  #            color = "black", linewidth = 2, linetype = "solid") +
+  
+  # raw points, faded
+  geom_point(size = 5, alpha = 0.20) +
+  
+  # ── PARALLEL within-group lines (ANCOVA) ───
+  geom_line(data = line_df,
+            aes(x = x, y = y, color = group, group = group),
+            linewidth = 1.8, linetype = "solid") +
+  
+  # group mean points
+  #geom_point(data = group_means,
+  #           aes(x = x, y = y, color = group),
+  #           size = 8, alpha = 1, shape = 19) +
+  
+  geom_text(
+    data     = label_df,
+    aes(x = x, y = y, label = label, color = group),
+    hjust    = -.10,
+    fontface = "bold",
+    size     = 6,
+    show.legend = FALSE
+  ) +
+  
+  annotate(
+    "richtext",
+    x         = min(df$x),
+    y         = max(df$y),
+    label     = formula_label,
+    hjust     = 0.00,
+    vjust     = 1,
+    fill      = NA,
+    label.color = NA
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+  
+  scale_x_continuous(
+    breaks = seq(floor(min(df$x)), ceiling(max(df$x) + 5), by = 10),
+    expand = expansion(mult = c(0.01, 0.20))
+  ) +
+  scale_y_continuous(
+    breaks = seq(floor(min(df$y)), ceiling(max(df$y) + 5), by = 5),
+    expand = expansion(mult = c(0.05, 0.20))
+  ) +
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','ancova_plot.png'),
+       plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','ancova_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+**Same model - different interpretation and motivation.**
+
+<small>
+
+- Cannot model varying slopes across groups  
+- Cannot include level-2 predictors of group effects  
+- Group differences are controlled, not modeled
+
+</small></small>
+
+---
+
+## `r emo::ji("jigsaw")` Post-adjustment?
+
+---
+
+## `r emo::ji("jigsaw")` Post-adjustment?
+
+**If nesting biases standard errors, adjust them directly.**
+
+<small><small>
+
+**R code:**
+
+<pre style="font-size:0.8em;">
+pooled_lm <- lm(y ~ x_c, data = df)
+cluster_se <- sandwich::vcovCL(pooled_lm, cluster = df$group, type = "HC1")
+</pre>
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(dplyr)
+library(lmtest)
+library(sandwich)
+library(knitr)
+
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+# ---------------------------
+# 1. Center predictor
+# ---------------------------
+df <- df %>%
+  mutate(x_c = x - mean(x))
+
+# 1. Fit pooled OLS
+pooled_lm <- lm(y ~ x_c, data = df)
+
+# 2. Cluster-robust SEs (Huber-White / sandwich)
+cluster_se <- vcovCL(pooled_lm, cluster = df$group, type = "HC1")
+
+# 3. Extract coefficient table with robust SEs
+robust_mat <- coeftest(pooled_lm, vcov. = cluster_se)
+
+# 4. Convert to data frame
+robust_table <- data.frame(
+  term      = rownames(robust_mat),
+  estimate  = robust_mat[, "Estimate"],
+  std.error = robust_mat[, "Std. Error"],
+  t_value   = robust_mat[, "t value"],
+  p_value   = robust_mat[, "Pr(>|t|)"],
+  row.names = NULL
+)
+
+# 5. Round for display
+robust_table <- robust_table %>%
+  mutate(
+    estimate  = round(estimate, 3),
+    std.error = round(std.error, 3),
+    t_value   = round(t_value, 2),
+    p_value   = round(p_value, 3)
+  )
+
+# 6. Show nicely in table
+kable(robust_table, caption = "Fixed-effects Regression with Cluster-Robust SEs")
+
+```
+
+- The new SE = **0.02** up from **0.006**
+
+- Does **not model cluster-specific effects** 
+
+- Generally **not recommended** for multilevel data
+
+</small></small>
+
+---
+
+## `r emo::ji("twisted_rightwards_arrows")` Separate regressions? 
+
+---
+
+## `r emo::ji("twisted_rightwards_arrows")` Separate regressions?
+
+```{r seperate, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)  # wide sd = lots of overlap
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# group means
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = max(sub$x) + 2.5,
+    y     = max(sub$y)-3,
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+
+label_df$y[label_df$label == "Group 4"] <- 
+  label_df$y[label_df$label == "Group 4"] + 1
+
+label_df$y[label_df$label == "Group 2"] <- 
+  label_df$y[label_df$label == "Group 2"] + 0.50
+
+label_df$y[label_df$label == "Group 5"] <- 
+  label_df$y[label_df$label == "Group 5"] + 2
+
+# HTML formula using ggtext richtext
+formula_label <- "<span style='font-size:18pt'><i>y<sub>ij</sub></i> = <i>β<sub>0</sub></i> + <i>β<sub>1</sub></i><i>x<sub>ij</sub></i> + <i>e<sub>ij</sub></i></span>"
+
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # regression line through group means (aggregated)
+  geom_smooth(data = group_means,
+              aes(x = x, y = y, group = 1),
+              method = "lm", se = FALSE,
+              color = "black", linewidth = 2, linetype = "solid") +
+  
+  # raw points, faded
+  geom_point(size = 5, alpha = 0.10) +
+  
+  # within-group regression lines
+  geom_smooth(method = "lm", se = FALSE,
+              linewidth = 1.8, linetype = "solid") +
+  
+  # pooled OLS through all raw points
+  #geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+  #            color = "#222222", linewidth = 1.8) +
+  
+  # group mean points
+  geom_point(data = group_means,
+             aes(x = x, y = y, color = group),
+             size = 8, alpha = 1, shape = 19) +
+  
+  geom_text(
+    data     = label_df,
+    aes(x = x, y = y, label = label, color = group),
+    hjust    = 0,
+    fontface = "bold",
+    size     = 6,
+    show.legend = FALSE
+  ) +
+  
+  # richtext annotation for the formula
+  annotate(
+    "richtext",
+    x         = min(df$x),
+    y         = max(df$y),
+    label     = formula_label,
+    hjust     = -0.25,
+    vjust     = 1,
+    fill      = NA,       # no box background
+    label.color = NA      # no box border
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+  
+  scale_x_continuous(
+    breaks = seq(
+      floor(min(df$x)),
+      ceiling(max(df$x)+5),
+      by = 10                                 # more ticks on y
+    ),   # more ticks on x
+    expand = expansion(mult = c(0.01, 0.20))
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      floor(min(df$y)),
+      ceiling(max(df$y)+5),
+      by = 5                                 # more ticks on y
+    ),
+    expand = expansion(mult = c(0.05, 0.20))
+  )+
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','seperate_plot.png'),
+       plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+<img src=`r here::here('slides','img','seperate_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+] 
+
+**Analyze each level-2 unit separately.**
+
+- 5 groups = 5 models
+
+---
+
+.center[
+## `r emo::ji("twisted_rightwards_arrows")` Seperate regressions?
+
+<small>
+
+**5 separate regressions `r ji('arrow_right')` get the variance across groups** 
+
+]
+
+<small>
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(dplyr)
+library(broom)
+library(knitr)
+
+# ---------------------------
+# 1. Fit separate regressions per group
+# ---------------------------
+group_coefs <- df %>%
+  group_by(group) %>%
+  do({
+    fit <- lm(y ~ x, data = .)
+    tidy(fit) %>%
+      dplyr::select(term, estimate) %>%
+      tidyr::pivot_wider(names_from = term, values_from = estimate)
+  }) %>%
+  ungroup()
+
+# Rename for clarity
+colnames(group_coefs) <- c("group", "intercept", "slope")
+
+# ---------------------------
+# 2. Compute group-level summary statistics
+# ---------------------------
+coef_summary <- group_coefs %>%
+  summarise(
+    intercept_var = var(intercept),
+    slope_var     = var(slope),
+    intercept_slope_cov = cov(intercept, slope)
+  )
+
+```
+
+.pull-left-45[
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+# ---------------------------
+# 3. Show results
+# ---------------------------
+group_coefs2 <- group_coefs %>%
+  dplyr::mutate(
+    intercept = round(intercept, 2),
+    slope   = round(slope, 2)
+  )
+
+kable(group_coefs2, caption = "Separate Regressions per Group: Intercepts and Slopes") 
+
+```
+
+]
+
+.pull-right-45[
+
+```{r, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+# ---------------------------
+# 3. Show results
+# ---------------------------
+coef_summary2 <- coef_summary %>%
+  dplyr::mutate(
+    I_Var = round(intercept_var, 3),
+    S_Var = round(slope_var, 5),
+    IS_Cov = round(intercept_slope_cov, 3)
+  ) %>%
+  dplyr::select(I_Var, S_Var, IS_Cov)
+
+kable(coef_summary2, caption = "Variance and Covariance Across Groups (equal weight)") 
+
+```
+
+]
+
+</small></small>
+
+---
+
+## `r emo::ji("twisted_rightwards_arrows")` Separate regressions?
+
+- Examine variance of intercepts & slopes
+
+- All clusters are weighted equally  
+
+- Does **not partition variance** 
+
+- Involves estimating a **large number of parameters!** 
+
+> 50 hospitals = 50 separate regressions = 500 parameters - this requires a ton of data! `r ji('pensive')` 
+
+---
+
+## `r ji('raised_eyebrow')` Which Effect Is Correct?
+
+```{r paradox, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+set.seed(1234)
+n_groups    <- 5
+n_per_group <- 80
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.10, 0.10, 0.10, 0.10, 0.10)
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, 2)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+# group means
+group_means <- aggregate(cbind(x, y) ~ group, data = df, FUN = mean)
+
+# ── ANCOVA: fit model with common slope ──────────────────────────────────────
+ancova_fit <- lm(y ~ x + group, data = df)   # parallel slopes model
+common_slope <- coef(ancova_fit)["x"]
+
+# Build predicted line segments for each group over its x-range
+line_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  x_seq <- seq(min(sub$x), max(sub$x), length.out = 100)
+  # predict with group factor set to g
+  nd <- data.frame(x = x_seq, group = factor(g, levels = 1:n_groups))
+  data.frame(group = factor(g), x = x_seq, y = predict(ancova_fit, newdata = nd))
+}))
+
+label_df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  sub <- df[df$group == g, ]
+  data.frame(
+    group = factor(g),
+    x     = max(sub$x) + 2.5,
+    y     = max(sub$y) - 3,
+    label = paste0("Group ", g),
+    color = group_colors[g]
+  )
+}))
+label_df$y[label_df$label == "Group 4"] <- label_df$y[label_df$label == "Group 4"] + 1
+label_df$y[label_df$label == "Group 2"] <- label_df$y[label_df$label == "Group 2"] + 0.50
+label_df$y[label_df$label == "Group 5"] <- label_df$y[label_df$label == "Group 5"] + 2
+
+# HTML formula – ANCOVA version
+formula_label <- "<span style='font-size:18pt'><i>y<sub>ij</sub></i> = <i>β<sub>0</sub></i> + <i>β<sub>1</sub></i><i>x<sub>ij</sub></i> + <i>α<sub>j</sub></i> + <i>e<sub>ij</sub></i></span>"
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # pooled OLS through all raw points
+  geom_smooth(aes(group = 1), method = "lm", se = FALSE,
+              color = "#D9D9D9", linewidth = 1.8) +
+  
+  # regression line through group means
+  geom_smooth(data = group_means,
+              aes(x = x, y = y, group = 1),
+              method = "lm", se = FALSE,
+              color = "black", linewidth = 2, linetype = "solid") +
+  
+  # raw points, faded
+  geom_point(size = 5, alpha = 0.10) +
+  
+  geom_line(data = line_df,
+            aes(x = x, y = y, color = group, group = group),
+            linewidth = 1.8, linetype = "solid") +
+  
+  # group mean points
+  geom_point(data = group_means,
+             aes(x = x, y = y, color = group),
+             size = 8, alpha = 1, shape = 19) +
+  
+  geom_text(
+    data     = label_df,
+    aes(x = x, y = y, label = label, color = group),
+    hjust    = 0,
+    fontface = "bold",
+    size     = 6,
+    show.legend = FALSE
+  ) +
+  
+  #annotate(
+  #  "richtext",
+  #  x         = min(df$x),
+  #  y         = max(df$y),
+  #  label     = formula_label,
+  #  hjust     = -0.35,
+  #  vjust     = 1,
+  #  fill      = NA,
+  #  label.color = NA
+  #) +
+  
+  scale_color_manual(values = group_colors) +
+  
+  scale_x_continuous(
+    breaks = seq(floor(min(df$x)), ceiling(max(df$x) + 5), by = 10),
+    expand = expansion(mult = c(0.01, 0.20))
+  ) +
+  scale_y_continuous(
+    breaks = seq(floor(min(df$y)), ceiling(max(df$y) + 5), by = 5),
+    expand = expansion(mult = c(0.05, 0.20))
+  ) +
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+# p
+
+ggsave(here::here('slides','img','paradox_plot.png'), plot = p, width = 6.5, height = 4, dpi = 300)
+
+```
+
+.center[
+
+<img src=`r here::here('slides','img','paradox_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+
+]  
+
+<small>
+
+**What happens with the same data can be confusing.** 
+
+> Ignoring clustering changes the estimated relationship.
+
+<style="clear: both;">
+
+.center[
+.highlight[
+**<span style="color:#FFFFFF;">
+We need a model that separates within- and between-group effects.
+</span>**
+]
+]
+
+</small>
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">  The Solution: Multilevel Models
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">  The Solution: Multilevel Models
+
+```{r mlm, echo=FALSE, fig.align="center", message=FALSE, warning=FALSE, eval=T}
+
+library(ggplot2)
+library(ggtext)
+
+set.seed(1234)
+n_groups    <- 5
+n_per_group <- 80
+
+group_x_means    <- c(15, 30, 45, 60, 75)
+group_intercepts <- c(8, 5, 2, -1, -4)
+group_slopes     <- c(0.05, 0.14, 0.08, 0.16, 0.03)
+sigma_eps        <- 2   # residual SD — must match data generation
+
+df <- do.call(rbind, lapply(1:n_groups, function(g) {
+  x_g <- rnorm(n_per_group, mean = group_x_means[g], sd = 20)
+  y_g <- group_intercepts[g] + group_slopes[g] * x_g + rnorm(n_per_group, 0, sigma_eps)
+  data.frame(group = factor(g), x = x_g, y = y_g)
+}))
+
+# ── Population-level parameters ───────────────────────────────────────────────
+beta0    <- mean(group_intercepts)   # mean intercept  (fixed effect)
+beta1    <- mean(group_slopes)       # mean slope      (fixed effect)
+sigma_u0 <- sd(group_intercepts)     # SD of random intercepts
+sigma_u1 <- sd(group_slopes)         # SD of random slopes
+
+x_seq  <- seq(min(df$x) - 5, max(df$x) + 5, length.out = 300)
+mean_y <- beta0 + beta1 * x_seq
+
+# 95% prediction interval for a NEW observation from a NEW group:
+# Var(y_ij) = sigma_u0^2           <- random intercept variance
+#           + sigma_u1^2 * x^2     <- random slope variance (fans with x)
+#           + sigma_eps^2           <- residual variance
+# 95% PI = mean ± 1.96 * sqrt(total variance)
+total_sd <- sqrt(sigma_u0^2 + (sigma_u1 * x_seq)^2 + sigma_eps^2)
+
+ribbon_df <- data.frame(
+  x    = x_seq,
+  y    = mean_y,
+  ymin = mean_y - 1.96 * total_sd,
+  ymax = mean_y + 1.96 * total_sd
+)
+
+# ── Formula ───────────────────────────────────────────────────────────────────
+formula_label <- paste0(
+  "<span style='font-size:15pt'>",
+  "<b>Level 1 (Within-group):</b><br>",
+  "<i>y<sub>ij</sub></i> = <i>β<sub>0j</sub></i> + <i>β<sub>1j</sub></i><i>x<sub>ij</sub></i> + <i>e<sub>ij</sub></i><br><br>",
+  "<b>Level 2 (Between-group):</b><br>",
+  "<i>β<sub>0j</sub></i> = <i>γ<sub>00</sub></i> + <i>u<sub>0j</sub></i><br>",
+  "<i>β<sub>1j</sub></i> = <i>γ<sub>10</sub></i> + <i>u<sub>1j</sub></i>",
+  "</span>"
+)
+
+# annotation x position for the bracket
+ann_x <- quantile(df$x, 0.93)
+idx   <- which.min(abs(x_seq - ann_x))
+
+group_colors <- c("#E41A1C","#377EB8","#4DAF4A","#FF7F00","#984EA3")
+
+p <- ggplot(df, aes(x = x, y = y, color = group, group = group)) +
+  
+  # 95% prediction interval ribbon
+  geom_ribbon(
+    data = ribbon_df,
+    aes(x = x, ymin = ymin, ymax = ymax),
+    inherit.aes = FALSE,
+    fill = "#00A9E0",
+    alpha = 0.04
+  ) +
+  
+  # Dashed black lines for PI borders
+  geom_line(
+    data = ribbon_df,
+    aes(x = x, y = ymin),
+    inherit.aes = FALSE,
+    color = "black",
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_line(
+    data = ribbon_df,
+    aes(x = x, y = ymax),
+    inherit.aes = FALSE,
+    color = "black",
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  
+  # Raw scatter, faded
+  geom_point(
+    size = 3,
+    alpha = 0.20
+  ) +
+  
+  # Formula annotation
+  annotate(
+    "richtext",
+    x = min(x_seq) + 1,
+    y = max(ribbon_df$ymax),
+    label = formula_label,
+    hjust = 0,
+    vjust = 0.60,
+    fill = NA,
+    label.color = NA,
+    size = 4.5
+  ) +
+  
+  # Bracket annotation for the band
+  annotate(
+    "segment",
+    x = ann_x,
+    xend = ann_x,
+    y = ribbon_df$ymin[idx],
+    yend = ribbon_df$ymax[idx],
+    color = "#EB7B35",
+    linewidth = 1,
+    arrow = arrow(
+      ends = "both",
+      length = unit(0.09, "inches"),
+      type = "closed"
+    )
+  ) +
+  
+  # Mean line (fixed effects)
+  geom_line(
+    data = ribbon_df,
+    aes(x = x, y = y),
+    inherit.aes = FALSE,
+    color = "#4B4F54",
+    linewidth = 2
+  ) +
+  
+  annotate(
+    "text",
+    x = ann_x + 1.5,
+    y = mean_y[idx],
+    label = "",
+    hjust = 0,
+    vjust = 0.5,
+    size = 3.5,
+    color = "#00B5AD",
+    fontface = "italic"
+  ) +
+  
+  scale_x_continuous(
+    breaks = seq(floor(min(df$x)), ceiling(max(df$x) + 5), by = 10),
+    expand = expansion(mult = c(0.02, 0.05))
+  ) +
+  
+  scale_y_continuous(
+    expand = expansion(mult = c(0.10, 0.25))
+  ) +
+  
+  scale_color_manual(values = group_colors) +
+  
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title      = element_text(face = "bold"),
+    axis.text       = element_blank(),
+    axis.ticks      = element_line(color = "black"),
+    legend.position = "none"
+  ) +
+  
+  labs(x = "Predictor (X)", y = "Outcome (Y)")
+
+#p
+
+ggsave(here::here('slides','img','mlm_plot.png'), plot = p, width = 6.5, height = 4, dpi = 300)
+
+# Seattle Children's official colors include:
+#Teal ("#00B5AD")
+#Bright Green ("#8DC63F")
+#Light Blue ("#00A9E0")
+#Warm Gray ("#A7A9AC")
+#Dark Gray ("#4B4F54")
+#orange ("#EB7B35")
+
+```
+
+.center[
+<img src=`r here::here('slides','img','mlm_plot.png')` style="width:600px; display:block; margin:-40px auto -20px auto;">
+]  
+
+<small>
+
+.center[
+**Multilevel models do something different:**  
+they *simultaneously* model variation **within** and **between** clusters.
+]
+
+</small>
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">  The Solution: Multilevel Models
+
+<small>
+
+**Model the structure - don't ignore it, don't destroy it.**
+
+*All the approaches so far fall short in some way:*
+
+- **Disaggregation:** <small>Easy but biased; treats all observations as exchangeable</small>  
+
+- **Aggregation:** <small>Only higher level data; different questions</small>
+
+- **Dummy codes:** <small>Assumes *one* shared story across clusters, unwieldy</small>
+
+- **Post-adjustment:** <small>Corrects bias but ignores cluster variation</small>   
+
+- **Separate regressions:** <small>Parameter-hungry and can't generalize</small>  
+
+</small>
+
+---
+
+## <img src="`r here::here('slides','img','cfa_icon_emoji.png')`"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;">  The Solution: Multilevel Models
+
+<small>
+
+**Model dependency across observations** 
+
+<small>
+
+  - Longitudinal, clustered, or cross-classified data? `r emo::ji("white_check_mark")` No problem!  
+
+  - Tailor your model to the **sources of correlation** in your data
+
+</small>
+
+**Include categorical or continuous predictors at any level**  
+
+<small>
+
+  - Time-varying, person-level, or group-level predictors   
+
+  - Explore **why** observations are correlated, don’t just control for it
+
+</small>
+
+**Handle unbalanced or missing data**  
+
+<small>
+
+  - Not every person needs the same number of measurements  
+
+  - Missing data? `r emo::ji("white_check_mark")` No problem!
+
+</small>
+
+</small>
+
+---
+
+class: center, middle, inverse
+
+## Questions? `r emo::ji("thinking")`
+
+.font120[
+`r emo::ji("e-mail")` waylon.howard@seattlechildrens.org      
+]
+
+Next: *Diving into Multilevel Models (MLM)*
+
+

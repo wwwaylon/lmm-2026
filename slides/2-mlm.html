@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>2-mlm.knit</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Waylon Howard" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/tile-view/tile-view.css" rel="stylesheet" />
+    <script src="libs/tile-view/tile-view.js"></script>
+    <script src="libs/clipboard/clipboard.min.js"></script>
+    <link href="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.css" rel="stylesheet" />
+    <script src="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.js"></script>
+    <script>window.xaringanExtraClipboard(null, {"button":"Copy Code","success":"Copied!","error":"Press Ctrl+C to Copy"})</script>
+    <script src="libs/kePrint/kePrint.js"></script>
+    <link href="libs/lightable/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="src/xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="src/slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# <table style="width:100%; border:none; border-collapse:collapse; background:transparent; cellpadding:0; cellspacing:0;">
+<tr>
+<td style="border:none; padding:0; vertical-align:middle; text-align:left;">
+<div style="font-size:1.25em; font-weight:bold; line-height:1.1;">
+Multilevel Modeling
+</div>
+<div style="font-size:1.25em; font-weight:bold; line-height:1.1;">
+in Clinical Research
+</div>
+</td>
+<td style="border:none; padding:0; vertical-align:middle; text-align:right;">
+<img src="img/cfa_icon_emoji.png" style="width:150px; display:inline-block; margin-left:-10px;">
+</td>
+</tr>
+</table>
+]
+.subtitle[
+## <small>Fitting and Interpreting</small>
+]
+.author[
+### Waylon Howard
+]
+.date[
+### Webinar, March 18, 2026
+]
+
+---
+
+exclude: true
+
+
+
+
+---
+
+
+
+---
+
+
+
+
+
+
+
+---
+
+## 📋 Study Overview
+
+**The Research Question**
+
+&lt;small&gt;
+
+&gt; **Can clinic-level characteristics predict patient pain?**
+
+&lt;/small&gt;
+
+.pull-left-50[
+
+**The Data**
+
+🏥 **25** clinics 
+
+🤒 **492** patients 
+
+Patients per clinic: **11-30**  
+
+DV: **Pain Score** (0–100 scale)
+
+&lt;/small&gt;
+
+]
+
+.pull-right-50[
+
+.center[
+**Clinic-Level Predictors**
+
+&lt;small&gt;&lt;small&gt;
+
+| Predictor | Type | 
+|-----------|------|
+| 🏥 Clinic Size | Continuous | 
+| 💊 Protocol Type | Binary | 
+
+&lt;/small&gt;&lt;/small&gt;
+
+]
+]
+
+---
+
+
+
+.center[
+
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/clinic_plot.png style="width:550px; display:block; margin:-40px auto -20px auto;"&gt;
+
+&lt;small&gt;
+
+Patients in the **same clinic** may be more similar to each other than to patients in other clinics.
+
+&lt;/small&gt;
+
+]
+
+---
+
+## 📐 Model Series Overview
+
+&lt;table class="table table-striped table-hover" style="font-size: 18px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Model &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Name &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Predictors &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; Parameters &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; AIC &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; BIC &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;"&gt; Model 0 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Single-Level Null &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; None &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3389.6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3398.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;font-weight: bold;"&gt; Model 1 &lt;/td&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;"&gt; Empty MLM (Null) &lt;/td&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;"&gt; None (+ random intercept) &lt;/td&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;"&gt; 3283.5 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(232, 244, 253, 255) !important;"&gt; 3296.1 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;"&gt; Model 2 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Main Effects &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Clinic Size + Protocol Type &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3281.3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3302.3 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;"&gt; Model 3 &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Interaction &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; Size × Protocol Interaction &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3280.2 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3305.4 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+There are many more possible extensions. 
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   From 1-level to 2-level model
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   From 1-level to 2-level model
+
+.pull-left-50[
+.center[
+.highlight[**&lt;span style="color:#FFFFFF;"&gt;1-level Intercept Only&lt;/span&gt;**]
+
+`$$y_i = \beta_0 + \text{e}_i$$`
+
+**ONE** source of variance:
+`$$\text{e}_{i} \sim N(0, \sigma_\text{e}^2)$$`
+&lt;br&gt;
+&lt;small&gt;
+*i* = level 1, &lt;span style="color:#EB7B35;"&gt;*j*&lt;/span&gt; = level 2
+&lt;/small&gt;
+]
+]
+.pull-right-50[
+.center[
+.highlight[**&lt;span style="color:#FFFFFF;"&gt;2-level Intercept Only&lt;/span&gt;**]
+
+`$$\text{Level 1: } y_{i\color{#EB7B35}{j}} = \beta_{0\color{#EB7B35}{j}} + \text{e}_{i\color{#EB7B35}{j}}$$`
+`$$\text{Level 2: } \beta_{0\color{#EB7B35}{j}} = \gamma_{00} + u_{0\color{#EB7B35}{j}}$$`
+**TWO** sources of variance:
+`$$\text{e}_{ij} \sim N(0, \sigma_\text{e}^2)$$`
+`$$u_{0j} \sim N(0, \tau_{00})$$`
+]
+]
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   From 1-level to 2-level model
+
+.highlight[**&lt;span style="color:#FFFFFF;"&gt;1-level Intercept Only&lt;/span&gt;**]
+&lt;br&gt;
+.left[
+**R code:**
+&lt;pre style="font-size:0.7em;"&gt;
+m0 &lt;- lm(y ~ 1, data = df)
+summary(m0)
+&lt;/pre&gt;
+] 
+
+.highlight[**&lt;span style="color:#FFFFFF;"&gt;2-level Intercept Only&lt;/span&gt;**]
+&lt;br&gt;
+.left[
+**R code:**
+&lt;pre style="font-size:0.7em;"&gt;
+m1 &lt;- lmer(y ~ 1 + (1 | cluster), data = df)
+summary(m1)
+&lt;/pre&gt;
+] 
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Model 0 Single-Level Null
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Model 0 Single-Level Null
+
+.center[
+
+$$
+y_i = \color{#00B5AD}{\beta_0} + \color{#EB7B35}{\text{e}_i}
+$$
+
+**Fixed Effect**
+
+&lt;small&gt;
+
+| Parameter | Estimate | SE |
+|-----------|----------|----|
+| `\(\color{#00B5AD}{\beta_0}\)` (Mean) | 49.04 | 0.34 |
+
+&lt;/small&gt;
+
+**Random Effects**
+
+&lt;small&gt;
+
+| Source | Variance | SD |
+|--------|----------|----|
+| Total (`\(\color{#EB7B35}{\sigma_\text{e}^2}\)`) | 57.141 | 7.559 |
+
+&lt;/small&gt;
+
+]
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Empty MLM (Null)
+
+---
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Empty MLM (Null)
+
+.center[
+
+**Fixed Effect**
+
+&lt;small&gt;
+
+| Parameter | Estimate | SE |
+|-----------|----------|----|
+| `\(\gamma_{00}\)` (Grand Mean) | 49.11 | 0.86 |
+
+&lt;/small&gt;
+
+**Random Effects**
+
+&lt;small&gt;
+
+| Source | Variance | SD |
+|--------|----------|----|
+| Between-Clinic (`\(\tau_{00}\)`) | 16.272 | 4.034 |
+| Within-Clinic (`\(\sigma_\text{e}^2\)`) | 41.29 | 6.426 |
+| **Total** | **57.561** | |
+
+&lt;/small&gt;
+
+]
+
+---
+
+## 📊 Intraclass Correlation (ICC)
+
+**What is the ICC?**
+
+`$$\text{ICC} = \frac{\tau_{00}}{\tau_{00} + \sigma_\text{e}^2} = \frac{16.272}{16.272 + 41.29} = 0.283$$`
+
+**Three Interpretations**  
+
+&lt;small&gt;&lt;small&gt;
+
+- **Proportion:** 28.3% of variance in pain is **between clinics**
+
+- **Correlation:** Patients from the same clinic correlate at **r = 0.283**
+
+- **Effect Size:** Large clustering effect
+
+&lt;/small&gt;
+
+&gt; ⚠️ No ICC value is “safe” to ignore.
+
+&lt;/small&gt;
+
+
+
+---
+
+## ⚡ Design Effect
+
+**Clustering inflates variance (less info than you think)**
+
+$$
+\small
+\text{DEFF} = 1 + (\bar{n} - 1) \times \text{ICC}
+$$
+$$
+\small
+= 1 + (19.7 - 1) \times 0.283 = 6.28
+$$
+
+**⚠️ Effective Sample Size**
+
+$$
+\small
+N_{\text{eff}} = \frac{N}{\text{DEFF}} = \frac{492}{6.28} \approx 78
+$$
+
+---
+
+## 🤔 Likelihood Ratio Test 
+
+**Hypothesis:** 
+
+`\(\small H_0: \tau_{00} = 0 \space \color{gray}{\text{(no clustering)}} \quad \quad H_1: \tau_{00} &gt; 0 \space \color{gray}{\text{(clustering exists)}}\)`
+
+**Result:** 
+
+`\(\small -2 \Delta \text{LL} (df = 1) = 108.13 \text{, p } &lt; .001\)`
+
+&lt;style="clear: both;"&gt;
+
+.center[
+.highlight[
+**&lt;span style="color:#FFFFFF;"&gt;
+Model improves!
+&lt;/span&gt;**
+]
+]
+
+**R code:**
+&lt;pre style="font-size:0.7em;"&gt;
+lrt_stat &lt;- -2 * (logLik(Model0) - logLik(Model1))
+p_value &lt;- pchisq(lrt_stat, df = 1, lower.tail = FALSE)
+&lt;/pre&gt;
+
+---
+
+## 🤕 Expected Pain Score Range
+
+`$$\small \text{95% CI} = \gamma_{00} \pm 1.96\sqrt{\tau_{00}} \quad = 49.11 \pm 1.96 \times 4.03 = [41.2, \; 57]$$`
+
+
+.center[
+
+&lt;small&gt;
+
+**Expected Distribution of Clinic Means**
+
+95% of clinics: 41.2 – 57
+
+&lt;/small&gt;
+
+&lt;img src=C:/Users/whowar/Desktop/lmm-2026/slides/img/pain_ci_plot.png style="width:580px; display:block; margin:10px auto -20px auto;"&gt;
+
+]
+
+---
+class: inverse, center, middle
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Model 2: Main Effects
+
+Adding Level-2 Predictors: 
+
+Clinic Size &amp; Protocol Type
+
+---
+
+## Model 2: Equations &amp; Fixed Effects
+
+.pull-left-50[
+
+&lt;small&gt;
+
+`$$\color{grey}{\text{Level 1: }} y_{pc} = \beta_{0c} + \text{e}_{pc}$$`
+
+`$$\small \begin{split} \color{grey}{\text{Level 2: }} \beta_{0c} = \gamma_{00} \\ + \gamma_{01}(\text{size50}_c) \\ + \gamma_{02}(\text{protocol}_c) \\ + U_{0c} \end{split}$$`
+
+**R code:**
+
+&lt;/small&gt;
+
+&lt;pre style="font-size:0.658em;"&gt;
+Model2 &lt;- lmer(
+  pain_score ~ 1 + size50 + 
+    protocol_type + (1 | clinic_id),
+  data = patient_data, REML = TRUE)
+&lt;/pre&gt;
+
+
+]
+
+.pull-right[
+**Fixed Effects**
+
+&lt;small&gt;&lt;small&gt;
+
+&lt;table class="table" style="font-size: 15px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;font-weight: bold;"&gt;  &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Estimate &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; SE &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; t &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₀ Intercept &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 48.583 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.270 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 38.261 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: green !important;"&gt; 0.000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₁ Size50 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.920 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.925 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.995 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: gray !important;"&gt; 0.331 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₂ Protocol &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.078 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.758 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.613 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: gray !important;"&gt; 0.546 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+**Intercept**: Expected mean pain = 48.58 for clinic size of 50 patients on the Standard protocol
+
+**Size50**: 0.92 pts per each additional patient past 50
+
+**Protocol**: Enhanced clinics 1.08 pts higher given clinic size of 50 patients.
+
+&lt;/small&gt;&lt;/small&gt;
+]
+
+---
+
+## Model 2: Variance &amp; Model Fit
+
+.pull-right-45[
+
+&lt;small&gt;&lt;small&gt;
+
+&lt;style="clear: both;"&gt;
+
+### `\(\text{Pseudo-}R^2\)` (7.5% of the 28.3% possible)
+
+&lt;small&gt;&lt;/small&gt;
+
+&lt;table class="table" style="font-size: 16px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;font-weight: bold;"&gt; Component &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Base Var &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Model 2 Var &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Pseudo-R² &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Between-Clinic (L2) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 15.535 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 14.368 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0751 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Within-Clinic (L1) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 41.289 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 41.287 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;/small&gt;&lt;small&gt;
+
+### `\(\text{Total R}^2\)` (1.92% of the total variance)
+
+&lt;/small&gt;&lt;/small&gt;
+
+]
+
+.pull-left-50[
+
+**LRT: Model 1 vs Model 2**
+
+&lt;small&gt;&lt;small&gt;
+
+&lt;table class="table" style="font-size: 15px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Model &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Params &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; AIC &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Chisq &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; df &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Model 1 (Empty MLM) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3285.02 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; Model 2 (Main Effects) &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 3287.31 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 1.713 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 0.4247 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;/small&gt;
+
+**Conditional ICC**
+After adding Level-2 predictors:  
+
+ICC = **0.258** (25.8% between-clinic variance remains)
+
+&lt;/small&gt;
+
+]
+
+---
+class: inverse, center, middle
+
+## &lt;img src="C:/Users/whowar/Desktop/lmm-2026/slides/img/cfa_icon_emoji.png"style="width:60px; display:inline-block; margin-left:-10px; vertical-align:-12px;"&gt;   Model 3: Interaction
+
+Adding the Size x Protocol Interaction
+
+---
+
+## Model 3: Equations &amp; Fixed Effects
+
+.pull-left-50[
+
+`$$\small \begin{aligned} 
+\color{grey}{\text{Level 2: }} \beta_{0c} = \, &amp;\gamma_{00} \\ 
+&amp;+ \gamma_{01}(\text{size50}_{c}) \\ 
+&amp;+ \gamma_{02}(\text{protocol}_{c}) \\ 
+&amp;+ \gamma_{03}(\text{size50}_{c} \times \text{protocol}_{c}) \\ 
+&amp;+ U_{0c} 
+\end{aligned}$$`
+
+&lt;small&gt;
+
+**R code:**
+
+&lt;pre style="font-size:0.8em;"&gt;
+Model3 &lt;- lmer(pain_score ~ 1 
++ size50 * protocol_type 
++ (1 | clinic_id),
+  data = patient_data, REML = FALSE
+&lt;/pre&gt;
+
+&lt;small&gt;&lt;small&gt;
+
+| Protocol | Simple Slopes |
+|----------|-----------|
+| Standard | `\(\gamma_{01}\)` = 0.83 |
+| Enhanced | `\(\gamma_{01} + \gamma_{03}\)` = 0.99 |
+
+&lt;/small&gt;&lt;/small&gt;
+
+]
+
+.pull-right-50[
+
+**Fixed Effects**
+
+&lt;table class="table" style="font-size: 14px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;font-weight: bold;"&gt;  &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Estimate &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; SE &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; t &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₀ Intercept &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 48.568 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.313 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 36.988 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: green !important;"&gt; 0.000 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₁ Size50 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.834 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.428 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.584 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: gray !important;"&gt; 0.565 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; γ₀₂ Protocol &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.090 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.803 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.605 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;color: gray !important;"&gt; 0.552 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;background-color: rgba(255, 249, 196, 255) !important;"&gt; γ₀₃ Size×Protocol &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(255, 249, 196, 255) !important;"&gt; 0.153 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(255, 249, 196, 255) !important;"&gt; 1.907 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(255, 249, 196, 255) !important;"&gt; 0.080 &lt;/td&gt;
+   &lt;td style="text-align:right;background-color: rgba(255, 249, 196, 255) !important;font-weight: bold;color: gray !important;"&gt; 0.937 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;small&gt;
+
+&gt; Interaction `\(\gamma_{03}\)` = 0.15, *p* = 0.937
+
+&lt;/small&gt;
+
+]
+
+---
+
+## Interaction Visualization
+
+&lt;img src="2-mlm_files/figure-html/interaction-plot-1.png" width="720" style="display: block; margin: auto;" /&gt;
+
+&lt;small&gt;&lt;small&gt;
+
+&gt; The lines diverge as clinic size increases — this is the interaction. Enhanced protocol shows steeper improvement in larger clinics. Within our observed data range, the lines have not yet crossed, so there is no difference (*p* &gt; .05).
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Interaction Visualization 
+
+&lt;img src="2-mlm_files/figure-html/interaction-plot2-1.png" width="720" style="display: block; margin: auto;" /&gt;
+
+&lt;small&gt;&lt;small&gt;
+
+&gt; Extending the x-axis reveals where the lines eventually cross - the point at which one protocol overtakes the other. This is where the Standard vs. Enhanced protocols are significantly different. 
+
+&lt;/small&gt;&lt;/small&gt;
+
+---
+
+## Model 3: Fit &amp; Comparison
+
+.pull-left-50[
+
+**LRT: Model 2 vs Model 3**
+
+&lt;table class="table" style="font-size: 15px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; Model &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Params &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; AIC &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; Chisq &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; df &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; p &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Model 2 (Main Effects) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 5 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3287.31 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; NA &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; NA &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; Model 3 (Interaction) &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 6 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 3289.30 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 0.009 &lt;/td&gt;
+   &lt;td style="text-align:right;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 1 &lt;/td&gt;
+   &lt;td style="text-align:left;font-weight: bold;background-color: rgba(255, 243, 224, 255) !important;"&gt; 0.9245 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+Model does not improve.
+
+]
+
+.pull-right-50[
+
+.center[
+**Pseudo-R2 Comparison**
+]
+
+&lt;table class="table" style="font-size: 15px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;font-weight: bold;"&gt; Component &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Model 2 &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Model 3 &lt;/th&gt;
+   &lt;th style="text-align:right;font-weight: bold;"&gt; Δ var &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Between-Clinic (L2) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0751 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0759 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 8e-04 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Within-Clinic (L1) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.0000 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0e+00 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+.center[
+**Total R2**
+]
+
+&lt;small&gt;&lt;small&gt;&lt;small&gt;
+
+| Model | Total R² |
+|-------|----------|
+| Model 2 (Main Effects) | 1.92% |
+| Model 3 (Interaction)  | 1.99% |
+| `$$\Delta R^2$$` | **0.074** |
+
+&lt;/small&gt;&lt;/small&gt;&lt;/small&gt;
+
+]
+
+---
+
+## 🚀 Next Steps &amp; Extensions
+
+**Immediate Next Steps**
+
+&lt;small&gt;
+
+👤 **Add Level-1 predictors** (patient age, diagnosis severity, visit frequency). This is where 🚀
+
+- 📈 **Test random slopes** - do Level-1 effects vary by clinic?
+
+- 🔀 **Cross-level interactions** - do clinic characteristics moderate patient-level effects?
+
+🆙 **Consider three-level** structure (visits - patients - clinics)
+
+&lt;/small&gt;
+
+---
+
+class: inverse, center, middle
+
+# 🎓 Thank You!   
+
+Additional Questions?
+
+.pull-left-45[
+
+.left[
+
+&lt;small&gt;
+
+Key Takeaways:
+1️⃣ Always check for clustering (ICC) in clinical data
+2️⃣ ICC = 0.283 which was huge (still MLM is *almost always* essential anyway)
+3️⃣ Effective N = 78, not 492 watch out for the design effect when thinking about powerign your study
+
+&lt;/small&gt;
+
+]
+]
+
+.pull-right-45[
+
+.left[
+
+&lt;small&gt;
+
+The MLM Advantage
+
+✅ Accounts for non-independence
+✅ Partitions variance appropriately
+✅ Handles unbalanced cluster sizes
+✅ Correct standard errors &amp; inference
+
+&lt;/small&gt;
+
+]
+
+]
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="libs/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"highlightLines": true,
+"slideNumberFormat": "<div class=\"progress-bar-container\">\n  <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">\n  </div>\n</div>"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
